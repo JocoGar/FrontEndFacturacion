@@ -1,0 +1,52 @@
+﻿@model List<FrontendFacturacion.Services.UsuarioDto>
+
+@{
+    ViewData["Title"] = "Usuarios";
+}
+
+<div class="page-title">
+    <div>
+        <h2>Usuarios</h2>
+        <p>Administración de accesos del sistema.</p>
+    </div>
+
+    <button class="btn btn-primary">Crear usuario</button>
+</div>
+
+<div class="table-card">
+    <div class="table-header">
+        <h3>Listado de usuarios</h3>
+        <input type="text" placeholder="Buscar usuario..." />
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>DPI</th>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Correo</th>
+                <th>Rol</th>
+                <th class="text-right">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var usuario in Model)
+            {
+                <tr>
+                    <td>@usuario.DpiUsuario</td>
+                    <td>@usuario.NombreUsuario</td>
+                    <td>@usuario.ApellidoUsuario</td>
+                    <td>@usuario.CorreoUsuario</td>
+                    <td><span class="badge badge-blue">@usuario.Rol</span></td>
+                    <td>
+                        <div class="actions">
+                            <button class="action-btn">Editar</button>
+                            <button class="action-btn">Rol</button>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

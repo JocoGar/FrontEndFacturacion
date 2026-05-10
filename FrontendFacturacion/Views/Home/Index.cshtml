@@ -1,0 +1,90 @@
+﻿@model FrontendFacturacion.Services.DashboardViewModel
+
+@{
+    ViewData["Title"] = "Inicio";
+}
+
+<div class="page-title">
+    <div>
+        <h2>Sistema de Facturación</h2>
+        <p>Panel principal del frontend del sistema.</p>
+    </div>
+
+    @if (Model.ApiDisponible)
+    {
+        <span class="badge badge-green">API disponible</span>
+    }
+    else
+    {
+        <span class="badge badge-yellow">Usando datos demo</span>
+    }
+</div>
+
+<div class="grid grid-5">
+    <div class="card">
+        <div class="stat-title">Productos</div>
+        <div class="stat-number">@Model.TotalProductos</div>
+        <div class="stat-note">Registrados</div>
+    </div>
+
+    <div class="card">
+        <div class="stat-title">Clientes</div>
+        <div class="stat-number">@Model.TotalClientes</div>
+        <div class="stat-note">Activos</div>
+    </div>
+
+    <div class="card">
+        <div class="stat-title">Facturas emitidas</div>
+        <div class="stat-number">@Model.TotalFacturas</div>
+        <div class="stat-note">Registradas</div>
+    </div>
+
+    <div class="card">
+        <div class="stat-title">Facturas pendientes</div>
+        <div class="stat-number">@Model.FacturasPendientes</div>
+        <div class="stat-note">Requieren pago</div>
+    </div>
+
+    <div class="card">
+        <div class="stat-title">Pagos registrados</div>
+        <div class="stat-number">@Model.TotalPagos</div>
+        <div class="stat-note">Verificados</div>
+    </div>
+</div>
+
+<br />
+
+<div class="table-card">
+    <div class="table-header">
+        <h3>Últimas facturas</h3>
+        <a asp-controller="Facturas" asp-action="Index" class="btn btn-outline">Ver todas</a>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>No. Factura</th>
+                <th>Cliente</th>
+                <th>Fecha</th>
+                <th class="text-right">Total</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var factura in Model.UltimasFacturas)
+            {
+                <tr>
+                    <td>@factura.NumeroFactura</td>
+                    <td>@factura.Cliente</td>
+                    <td>@factura.FechaEmisionFactura.ToString("dd/MM/yyyy")</td>
+                    <td class="text-right">Q@(factura.TotalFactura.ToString("N2"))</td>
+                    <td>
+                        <span class="badge @(factura.EstadoFactura == "PAGADA" ? "badge-green" : factura.EstadoFactura == "VENCIDA" ? "badge-red" : "badge-yellow")">
+                            @factura.EstadoFactura
+                        </span>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

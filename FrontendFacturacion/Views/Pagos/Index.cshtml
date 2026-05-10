@@ -1,0 +1,76 @@
+﻿@model List<FrontendFacturacion.Services.PagoDto>
+
+@{
+    ViewData["Title"] = "Pagos";
+
+    var totalPagos = Model.Sum(p => p.MontoPago);
+    var pendientes = Model.Count(p => p.EstadoPago == "PENDIENTE");
+}
+
+<div class="page-title">
+    <div>
+        <h2>Pagos</h2>
+        <p>Visualización y registro de pagos recibidos.</p>
+    </div>
+
+    <a asp-controller="Pagos" asp-action="Create" class="btn btn-primary">Registrar pago</a>
+</div>
+
+<div class="grid grid-3">
+    <div class="card">
+        <div class="stat-title">Total pagos</div>
+        <div class="stat-number">Q@(totalPagos.ToString("N2"))</div>
+        <div class="stat-note">Registrados</div>
+    </div>
+
+    <div class="card">
+        <div class="stat-title">Pagos pendientes</div>
+        <div class="stat-number">@pendientes</div>
+        <div class="stat-note">Por confirmar</div>
+    </div>
+
+    <div class="card">
+        <div class="stat-title">Registros</div>
+        <div class="stat-number">@Model.Count</div>
+        <div class="stat-note">Pagos en sistema</div>
+    </div>
+</div>
+
+<br />
+
+<div class="table-card">
+    <div class="table-header">
+        <h3>Últimos pagos registrados</h3>
+        <input type="text" placeholder="Buscar por factura..." />
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Factura</th>
+                <th>Fecha de pago</th>
+                <th class="text-right">Monto</th>
+                <th>Método</th>
+                <th>Referencia</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pago in Model)
+            {
+                <tr>
+                    <td>@pago.NumeroFactura</td>
+                    <td>@pago.FechaPago.ToString("dd/MM/yyyy")</td>
+                    <td class="text-right">Q@(pago.MontoPago.ToString("N2"))</td>
+                    <td>@pago.MetodoPago</td>
+                    <td>@pago.NumeroReferenciaPago</td>
+                    <td>
+                        <span class="badge @(pago.EstadoPago == "REGISTRADO" ? "badge-green" : pago.EstadoPago == "ANULADO" ? "badge-red" : "badge-yellow")">
+                            @pago.EstadoPago
+                        </span>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

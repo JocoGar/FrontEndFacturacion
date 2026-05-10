@@ -1,0 +1,102 @@
+﻿@model List<FrontendFacturacion.Services.FacturaDto>
+
+@{
+    ViewData["Title"] = "Facturas";
+
+    var totalEmitido = Model.Sum(f => f.TotalFactura);
+    var totalPendiente = Model.Where(f => f.EstadoFactura == "PENDIENTE" || f.EstadoFactura == "VENCIDA").Sum(f => f.TotalFactura);
+    var vencidas = Model.Count(f => f.EstadoFactura == "VENCIDA");
+    var pagadas = Model.Where(f => f.EstadoFactura == "PAGADA").Sum(f => f.TotalFactura);
+}
+
+<div class="page-title">
+    <div>
+        <h2>Facturas</h2>
+        <p>Gestión y control de facturas emitidas.</p>
+    </div>
+
+    <a asp-controller="Facturas" asp-action="Create" class="btn btn-primary">Nueva factura</a>
+</div>
+
+<div class="grid grid-4">
+    <div class="card">
+        <div class="stat-title">Total emitido</div>
+        <div class="stat-number">Q@(totalEmitido.ToString("N2"))</div>
+        <div class="stat-note">Facturas registradas</div>
+    </div>
+
+    <div class="card">
+        <div class="stat-title">Pendiente de cobro</div>
+        <div class="stat-number">Q@(totalPendiente.ToString("N2"))</div>
+        <div class="stat-note">Pendientes y vencidas</div>
+    </div>
+
+    <div class="card">
+        <div class="stat-title">Facturas vencidas</div>
+        <div class="stat-number">@vencidas</div>
+        <div class="stat-note">Requiere seguimiento</div>
+    </div>
+
+    <div class="card">
+        <div class="stat-title">Total pagado</div>
+        <div class="stat-number">Q@(pagadas.ToString("N2"))</div>
+        <div class="stat-note">Facturas pagadas</div>
+    </div>
+</div>
+
+<br />
+
+<div class="table-card">
+    <div class="table-header">
+        <h3>Listado de facturas</h3>
+        <select>
+            <option>Todos los estados</option>
+            <option>Pendiente</option>
+            <option>Pagada</option>
+            <option>Anulada</option>
+            <option>Vencida</option>
+        </select>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Número factura</th>
+                <th>Cliente</th>
+                <th>Usuario</th>
+                <th>Fecha emisión</th>
+                <th>Estado</th>
+                <th class="text-right">Subtotal</th>
+                <th class="text-right">Total</th>
+                <th class="text-right">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var factura in Model)
+            {
+                <tr>
+                    <td>@factura.NumeroFactura</td>
+                    <td>@factura.Cliente</td>
+                    <td>@factura.Usuario</td>
+                    <td>@factura.FechaEmisionFactura.ToString("dd/MM/yyyy")</td>
+                    <td>
+                        <span class="badge @(factura.EstadoFactura == "PAGADA" ? "badge-green" : factura.EstadoFactura == "VENCIDA" ? "badge-red" : "badge-yellow")">
+                            @factura.EstadoFactura
+                        </span>
+                    </td>
+                    <td class="text-right">Q@(factura.SubtotalFactura.ToString("N2"))</td>
+                    <td class="text-right">Q@(factura.TotalFactura.ToString("N2"))</td>
+                    <td>
+                        <div class="actions">
+                            <a asp-controller="Facturas" asp-action="Details" asp-route-id="@factura.IdFactura" class="action-btn">Ver</a>
+                            @if (factura.EstadoFactura != "PAGADA")
+                            {
+                                <button class="action-btn">Registrar pago</button>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

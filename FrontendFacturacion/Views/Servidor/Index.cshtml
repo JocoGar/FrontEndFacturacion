@@ -1,0 +1,52 @@
+﻿@{
+    ViewData["Title"] = "Estado del Servidor";
+
+    var hostname = ViewData["Hostname"]?.ToString() ?? Environment.MachineName;
+    var fechaServidor = ViewData["FechaServidor"]?.ToString() ?? DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
+    var apiDisponible = ViewData["ApiDisponible"] as bool? ?? false;
+}
+
+<div class="page-title">
+    <div>
+        <h2>Estado del servidor</h2>
+        <p>Información del nodo frontend que está respondiendo la petición.</p>
+    </div>
+</div>
+
+<div class="card">
+    <h3>Información del nodo frontend</h3>
+
+    <div class="server-box">
+        <strong>Hostname:</strong>
+        <span class="badge badge-blue">@hostname</span>
+
+        <strong>Estado de la aplicación:</strong>
+        <span class="badge badge-green">Activa</span>
+
+        <strong>Estado de la API:</strong>
+        @if (apiDisponible)
+        {
+            <span class="badge badge-green">Disponible</span>
+        }
+        else
+        {
+            <span class="badge badge-yellow">No disponible / usando demo</span>
+        }
+
+        <strong>Fecha del servidor:</strong>
+        <span>@fechaServidor</span>
+
+        <strong>Ambiente:</strong>
+        <span>Producción</span>
+    </div>
+</div>
+
+<br />
+
+<div class="card">
+    <p>
+        Esta pantalla permite demostrar qué nodo del frontend está atendiendo la solicitud.
+        Al refrescar la página desde la IP virtual o desde el balanceador, se puede validar
+        el comportamiento del clúster y del balanceo de carga.
+    </p>
+</div>

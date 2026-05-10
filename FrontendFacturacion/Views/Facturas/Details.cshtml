@@ -1,0 +1,111 @@
+﻿@model FrontendFacturacion.Services.FacturaDetalleViewModel
+
+@{
+    ViewData["Title"] = "Detalle de Factura";
+}
+
+<div class="page-title">
+    <div>
+        <h2>Factura @Model.Factura.NumeroFactura</h2>
+        <p>Detalle completo de la factura seleccionada.</p>
+    </div>
+
+    <a asp-controller="Facturas" asp-action="Index" class="btn btn-outline">Regresar</a>
+</div>
+
+<div class="card">
+    <div class="grid grid-2">
+        <div>
+            <h3>Cliente</h3>
+            <p><strong>@Model.Cliente.NombreCliente @Model.Cliente.ApellidoCliente</strong></p>
+            <p>DPI: @Model.Cliente.DpiCliente</p>
+            <p>Correo: @Model.Cliente.CorreoCliente</p>
+        </div>
+
+        <div>
+            <h3>Emitida por</h3>
+            <p><strong>@Model.Usuario.NombreUsuario @Model.Usuario.ApellidoUsuario</strong></p>
+            <p>Fecha: @Model.Factura.FechaEmisionFactura.ToString("dd/MM/yyyy")</p>
+            <p>
+                Estado:
+                <span class="badge @(Model.Factura.EstadoFactura == "PAGADA" ? "badge-green" : Model.Factura.EstadoFactura == "VENCIDA" ? "badge-red" : "badge-yellow")">
+                    @Model.Factura.EstadoFactura
+                </span>
+            </p>
+        </div>
+    </div>
+</div>
+
+<br />
+
+<div class="table-card">
+    <div class="table-header">
+        <h3>Productos facturados</h3>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Producto</th>
+                <th class="text-center">Cantidad</th>
+                <th class="text-right">Precio</th>
+                <th class="text-right">Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var detalle in Model.Detalles)
+            {
+                <tr>
+                    <td>@detalle.CodigoProducto</td>
+                    <td>@detalle.NombreProducto</td>
+                    <td class="text-center">@detalle.Cantidad</td>
+                    <td class="text-right">Q@detalle.PrecioUnitario.ToString("N2")</td>
+                    <td class="text-right">Q@detalle.Subtotal.ToString("N2")</td>
+                </tr>
+            }
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="4" class="text-right"><strong>Total</strong></td>
+                <td class="text-right"><strong>Q@Model.Factura.TotalFactura.ToString("N2")</strong></td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+<br />
+
+<div class="table-card">
+    <div class="table-header">
+        <h3>Pagos asociados</h3>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Fecha</th>
+                <th>Método</th>
+                <th>Referencia</th>
+                <th class="text-right">Monto</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pago in Model.Pagos)
+            {
+                <tr>
+                    <td>@pago.FechaPago.ToString("dd/MM/yyyy")</td>
+                    <td>@pago.MetodoPago</td>
+                    <td>@pago.NumeroReferenciaPago</td>
+                    <td class="text-right">Q@pago.MontoPago.ToString("N2")</td>
+                    <td>
+                        <span class="badge @(pago.EstadoPago == "REGISTRADO" ? "badge-green" : "badge-yellow")">
+                            @pago.EstadoPago
+                        </span>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,138 @@
+﻿@using FrontendFacturacion.Services
+
+@{
+    ViewData["Title"] = "Nueva Factura";
+
+    var clientes = ViewBag.Clientes as List<ClienteDto> ?? new();
+    var productos = ViewBag.Productos as List<ProductoDto> ?? new();
+    var usuarios = ViewBag.Usuarios as List<UsuarioDto> ?? new();
+}
+
+<div class="page-title">
+    <div>
+        <h2>Crear Nueva Factura</h2>
+        <p>Complete los datos generales y el detalle de productos.</p>
+    </div>
+
+    <a asp-controller="Facturas" asp-action="Index" class="btn btn-outline">Regresar</a>
+</div>
+
+<div class="form-card">
+    <div class="form-section">
+        <h3>1. Datos generales</h3>
+
+        <div class="grid grid-3">
+            <div class="form-group">
+                <label>Cliente</label>
+                <select>
+                    <option>Seleccione un cliente</option>
+                    @foreach (var cliente in clientes)
+                    {
+                        <option value="@cliente.DpiCliente">@cliente.NombreCliente @cliente.ApellidoCliente</option>
+                    }
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Usuario vendedor</label>
+                <select>
+                    @foreach (var usuario in usuarios)
+                    {
+                        <option value="@usuario.DpiUsuario">@usuario.NombreUsuario @usuario.ApellidoUsuario</option>
+                    }
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Moneda</label>
+                <select>
+                    <option>GTQ</option>
+                    <option>USD</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Fecha de emisión</label>
+                <input type="date" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+            </div>
+
+            <div class="form-group">
+                <label>Fecha de vencimiento</label>
+                <input type="date" />
+            </div>
+
+            <div class="form-group">
+                <label>Estado</label>
+                <select>
+                    <option>PENDIENTE</option>
+                    <option>PAGADA</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-section">
+        <h3>2. Detalle de productos</h3>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th class="text-center">Cantidad</th>
+                    <th class="text-right">Precio unitario</th>
+                    <th class="text-right">Subtotal</th>
+                    <th class="text-right">Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>
+                        <select>
+                            @foreach (var producto in productos)
+                            {
+                                <option value="@producto.CodigoProducto">
+                                    @producto.CodigoProducto - @producto.NombreProducto
+                                </option>
+                            }
+                        </select>
+                    </td>
+                    <td class="text-center">
+                        <input type="number" value="1" />
+                    </td>
+                    <td class="text-right">
+                        <input type="number" value="150.00" />
+                    </td>
+                    <td class="text-right">Q150.00</td>
+                    <td class="text-right">
+                        <button class="action-btn">Quitar</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <br />
+        <button class="btn btn-outline">Agregar producto</button>
+    </div>
+
+    <div class="summary-box">
+        <div class="summary-row">
+            <span>Subtotal</span>
+            <span>Q150.00</span>
+        </div>
+        <div class="summary-row">
+            <span>Descuento</span>
+            <span>Q0.00</span>
+        </div>
+        <div class="summary-row summary-total">
+            <span>Total</span>
+            <span>Q150.00</span>
+        </div>
+    </div>
+
+    <br />
+
+    <div class="actions">
+        <a asp-controller="Facturas" asp-action="Index" class="btn btn-outline">Cancelar</a>
+        <button class="btn btn-primary">Guardar factura</button>
+    </div>
+</div>

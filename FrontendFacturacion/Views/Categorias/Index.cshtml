@@ -1,0 +1,49 @@
+﻿@model List<FrontendFacturacion.Services.CategoriaDto>
+
+@{
+    ViewData["Title"] = "Categorías";
+}
+
+<div class="page-title">
+    <div>
+        <h2>Categorías</h2>
+        <p>Gestión de clasificaciones de productos.</p>
+    </div>
+
+    <a asp-controller="Categorias" asp-action="Create" class="btn btn-primary">Crear categoría</a>
+</div>
+
+<div class="table-card">
+    <div class="table-header">
+        <h3>Listado de categorías</h3>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre de categoría</th>
+                <th>Descripción</th>
+                <th>Fecha de creación</th>
+                <th class="text-right">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var categoria in Model)
+            {
+                <tr>
+                    <td>@categoria.IdCategoriaProducto</td>
+                    <td>@categoria.NombreCategoriaProducto</td>
+                    <td>@categoria.DescripcionCategoriaProducto</td>
+                    <td>@categoria.FechaCreacionCategoriaProducto.ToString("dd/MM/yyyy")</td>
+                    <td>
+                        <div class="actions">
+                            <button class="action-btn">Editar</button>
+                            <button class="action-btn">Eliminar</button>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

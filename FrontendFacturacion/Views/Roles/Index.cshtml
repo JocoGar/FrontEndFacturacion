@@ -1,0 +1,46 @@
+﻿@model List<FrontendFacturacion.Services.RolDto>
+
+@{
+    ViewData["Title"] = "Roles";
+}
+
+<div class="page-title">
+    <div>
+        <h2>Roles</h2>
+        <p>Catálogo de roles del sistema.</p>
+    </div>
+
+    <button class="btn btn-primary">Crear rol</button>
+</div>
+
+<div class="table-card">
+    <div class="table-header">
+        <h3>Listado de roles</h3>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre del rol</th>
+                <th>Descripción</th>
+                <th class="text-right">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var rol in Model)
+            {
+                <tr>
+                    <td>@rol.IdRol</td>
+                    <td>@rol.NombreRol</td>
+                    <td>@rol.Descripcion</td>
+                    <td>
+                        <div class="actions">
+                            <button class="action-btn">Editar</button>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

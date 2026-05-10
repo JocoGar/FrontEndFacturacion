@@ -1,0 +1,54 @@
+﻿@model List<FrontendFacturacion.Services.ProductoDto>
+
+@{
+    ViewData["Title"] = "Productos";
+}
+
+<div class="page-title">
+    <div>
+        <h2>Productos y Servicios</h2>
+        <p>Gestión de productos o servicios disponibles para facturación.</p>
+    </div>
+
+    <button class="btn btn-primary">Nuevo producto</button>
+</div>
+
+<div class="table-card">
+    <div class="table-header">
+        <h3>Listado de productos y servicios</h3>
+        <input type="text" placeholder="Buscar producto o servicio..." />
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Código</th>
+                <th>Nombre</th>
+                <th>Categoría</th>
+                <th>Descripción</th>
+                <th class="text-right">Precio unitario</th>
+                <th class="text-right">Precio costo</th>
+                <th class="text-right">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var producto in Model)
+            {
+                <tr>
+                    <td>@producto.CodigoProducto</td>
+                    <td>@producto.NombreProducto</td>
+                    <td>@producto.Categoria</td>
+                    <td>@producto.DescripcionProducto</td>
+                    <td class="text-right">Q@(producto.PrecioUnitarioProducto.ToString("N2"))</td>
+                    <td class="text-right">Q@(producto.PrecioCostoProducto.ToString("N2"))</td>
+                    <td>
+                        <div class="actions">
+                            <button class="action-btn">Editar</button>
+                            <button class="action-btn">Eliminar</button>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

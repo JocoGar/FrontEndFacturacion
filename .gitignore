@@ -1,0 +1,79 @@
+# =========================
+# Visual Studio / .NET
+# =========================
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# =========================
+# Build results
+# =========================
+bin/
+obj/
+[Bb]uild/
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+
+# =========================
+# Publish output
+# =========================
+publish/
+publish-linux/
+*.pubxml.user
+
+# =========================
+# ASP.NET / Logs
+# =========================
+logs/
+*.log
+
+# =========================
+# OS generated files
+# =========================
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# =========================
+# Rider / JetBrains
+# =========================
+.idea/
+
+# =========================
+# NuGet
+# =========================
+*.nupkg
+packages/
+.nuget/
+
+# =========================
+# Environment files
+# =========================
+.env
+.env.*
+appsettings.Development.json
+appsettings.Local.json
+
+# =========================
+# Temporary files
+# =========================
+*.tmp
+*.temp
+*.bak
+*.swp
+
+# =========================
+# Node / frontend tools, por si luego usan npm
+# =========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

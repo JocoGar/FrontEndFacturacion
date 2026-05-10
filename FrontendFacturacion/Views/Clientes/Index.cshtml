@@ -1,0 +1,52 @@
+﻿@model List<FrontendFacturacion.Services.ClienteDto>
+
+@{
+    ViewData["Title"] = "Clientes";
+}
+
+<div class="page-title">
+    <div>
+        <h2>Clientes</h2>
+        <p>Registro y administración de clientes.</p>
+    </div>
+
+    <button class="btn btn-primary">Registrar cliente</button>
+</div>
+
+<div class="table-card">
+    <div class="table-header">
+        <h3>Listado de clientes</h3>
+        <input type="text" placeholder="Buscar por DPI..." />
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>DPI</th>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>Correo</th>
+                <th>Teléfono</th>
+                <th class="text-right">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var cliente in Model)
+            {
+                <tr>
+                    <td>@cliente.DpiCliente</td>
+                    <td>@cliente.NombreCliente</td>
+                    <td>@cliente.ApellidoCliente</td>
+                    <td>@cliente.CorreoCliente</td>
+                    <td>@cliente.TelefonoCliente</td>
+                    <td>
+                        <div class="actions">
+                            <button class="action-btn">Editar</button>
+                            <button class="action-btn">Eliminar</button>
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

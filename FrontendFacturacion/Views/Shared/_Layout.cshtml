@@ -1,0 +1,65 @@
+﻿@{
+    var title = ViewData["Title"] ?? "Facturador";
+    var hostname = Environment.MachineName;
+}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@title - Sistema de Facturación</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-icon">F</div>
+            <div>
+                <h1>Facturador</h1>
+                <p>Sistema de Facturación</p>
+            </div>
+        </div>
+
+        <nav class="menu">
+            <a asp-controller="Home" asp-action="Index">Inicio</a>
+            <a asp-controller="Productos" asp-action="Index">Productos</a>
+            <a asp-controller="Categorias" asp-action="Index">Categorías</a>
+            <a asp-controller="Clientes" asp-action="Index">Clientes</a>
+            <a asp-controller="Facturas" asp-action="Index">Facturas</a>
+            <a asp-controller="Pagos" asp-action="Index">Pagos</a>
+            <a asp-controller="Usuarios" asp-action="Index">Usuarios</a>
+            <a asp-controller="Roles" asp-action="Index">Roles</a>
+            <a asp-controller="Servidor" asp-action="Index">Estado del servidor</a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-circle">AD</div>
+            <div>
+                <strong>Admin</strong>
+                <span>Usuario del sistema</span>
+            </div>
+        </div>
+    </aside>
+
+    <section class="page">
+        <header class="topbar">
+            <div>
+                <strong>Servidor:</strong>
+                <span class="badge badge-blue">@hostname</span>
+            </div>
+
+            <div>
+                <strong>API:</strong>
+                <span class="badge badge-green">Con fallback demo</span>
+            </div>
+        </header>
+
+        <main class="content">
+            @RenderBody()
+        </main>
+    </section>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

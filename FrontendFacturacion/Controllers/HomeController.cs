@@ -1,0 +1,37 @@
+using FrontendFacturacion.Services;
+using Microsoft.AspNetCore.Mvc;
+
+namespace FrontendFacturacion.Controllers
+{
+    public class HomeController : Controller
+    {
+        private readonly FacturacionApiService _api;
+
+        public HomeController(FacturacionApiService api)
+        {
+            _api = api;
+        }
+
+        public async Task<IActionResult> Index()
+        {
+            var productos = await _api.ObtenerProductosAsync();
+            var clientes = await _api.ObtenerClientesAsync();
+            var facturas = await _api.ObtenerFacturasAsync();
+            var pagos = await _api.ObtenerPagosAsync();
+            var apiDisponible = await _api.ApiDisponibleAsync();
+
+            var model = new DashboardViewModel
+            {
+                TotalProductos = productos.Count,
+                TotalClientes = clientes.Count,
+                TotalFacturas = facturas.Count,
+                FacturasPendientes = facturas.Count(f => f.EstadoFactura == "PENDIENTE"),
+                TotalPagos = pagos.Count,
+                ApiDisponible = apiDisponible,
+                UltimasFacturas = facturas.Take(5).ToList()
+            };
+
+            return View(model);
+        }
+    }
+}
