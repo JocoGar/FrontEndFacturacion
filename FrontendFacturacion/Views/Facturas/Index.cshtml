@@ -49,13 +49,12 @@
 <div class="table-card">
     <div class="table-header">
         <h3>Listado de facturas</h3>
-        <select>
-            <option>Todos los estados</option>
-            <option>Pendiente</option>
-            <option>Pagada</option>
-            <option>Anulada</option>
-            <option>Vencida</option>
-        </select>
+
+        <form method="get" class="search-form">
+            <input type="text" name="buscar" value="@ViewBag.Buscar" placeholder="Buscar por factura, cliente, usuario o estado..." />
+            <button class="btn btn-outline" type="submit">Buscar</button>
+            <a asp-action="Index" class="btn btn-outline">Limpiar</a>
+        </form>
     </div>
 
     <table>
@@ -89,10 +88,26 @@
                     <td>
                         <div class="actions">
                             <a asp-controller="Facturas" asp-action="Details" asp-route-id="@factura.IdFactura" class="action-btn">Ver</a>
+
                             @if (factura.EstadoFactura != "PAGADA")
                             {
-                                <button class="action-btn">Registrar pago</button>
+                                <a asp-controller="Pagos" asp-action="Create" asp-route-idFactura="@factura.IdFactura" class="action-btn">Registrar pago</a>
+
+                                <form asp-controller="Facturas" asp-action="MarcarPagada" asp-route-id="@factura.IdFactura" method="post" class="inline-form">
+                                    <button class="action-btn" type="submit">Marcar pagada</button>
+                                </form>
                             }
+
+                            @if (factura.EstadoFactura != "ANULADA")
+                            {
+                                <form asp-controller="Facturas" asp-action="Anular" asp-route-id="@factura.IdFactura" method="post" class="inline-form">
+                                    <button class="action-btn" type="submit" onclick="return confirm('¿Anular factura?')">Anular</button>
+                                </form>
+                            }
+
+                            <form asp-controller="Facturas" asp-action="Delete" asp-route-id="@factura.IdFactura" method="post" class="inline-form">
+                                <button class="action-btn" type="submit" onclick="return confirm('¿Eliminar factura?')">Eliminar</button>
+                            </form>
                         </div>
                     </td>
                 </tr>
