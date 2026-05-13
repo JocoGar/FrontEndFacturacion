@@ -6,8 +6,8 @@ builder.Services.AddControllersWithViews();
 
 builder.Services.AddHttpClient<FacturacionApiService>(client =>
 {
-    var baseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "http://localhost:5001";
-    var timeoutSeconds = builder.Configuration.GetValue<int>("ApiSettings:TimeoutSeconds", 1);
+    var baseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "http://localhost:5000";
+    var timeoutSeconds = builder.Configuration.GetValue<int>("ApiSettings:TimeoutSeconds", 2);
 
     client.BaseAddress = new Uri(baseUrl);
     client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);

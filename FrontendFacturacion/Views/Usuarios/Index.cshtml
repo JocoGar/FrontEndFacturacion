@@ -10,7 +10,7 @@
         <p>Administración de accesos del sistema.</p>
     </div>
 
-    <button class="btn btn-primary">Crear usuario</button>
+    <a asp-controller="Usuarios" asp-action="Create" class="btn btn-primary">Crear usuario</a>
 </div>
 
 <div class="table-card">
@@ -27,6 +27,7 @@
                 <th>Apellido</th>
                 <th>Correo</th>
                 <th>Rol</th>
+                <th>Fecha creación</th>
                 <th class="text-right">Acciones</th>
             </tr>
         </thead>
@@ -38,7 +39,8 @@
                     <td>@usuario.NombreUsuario</td>
                     <td>@usuario.ApellidoUsuario</td>
                     <td>@usuario.CorreoUsuario</td>
-                    <td><span class="badge badge-blue">@usuario.Rol</span></td>
+                    <td><span class="badge badge-blue">@usuario.NombreRol</span></td>
+                    <td>@usuario.FechaCreacionUsuario.ToString("dd/MM/yyyy")</td>
                     <td>
                         <div class="actions">
                             <button class="action-btn">Editar</button>

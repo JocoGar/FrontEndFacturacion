@@ -1,0 +1,63 @@
+﻿@using FrontendFacturacion.Services
+
+@{
+    ViewData["Title"] = "Crear Usuario";
+    var roles = ViewBag.Roles as List<RolDto> ?? new();
+}
+
+<div class="page-title">
+    <div>
+        <h2>Crear Usuario</h2>
+        <p>Formulario preparado para registrar usuarios del sistema.</p>
+    </div>
+
+    <a asp-controller="Usuarios" asp-action="Index" class="btn btn-outline">Regresar</a>
+</div>
+
+<div class="form-card">
+    <div class="form-section">
+        <h3>Datos del usuario</h3>
+
+        <div class="grid grid-3">
+            <div class="form-group">
+                <label>DPI</label>
+                <input type="text" maxlength="13" placeholder="Ejemplo: 2948302910101" />
+            </div>
+
+            <div class="form-group">
+                <label>Nombre</label>
+                <input type="text" placeholder="Nombre del usuario" />
+            </div>
+
+            <div class="form-group">
+                <label>Apellido</label>
+                <input type="text" placeholder="Apellido del usuario" />
+            </div>
+
+            <div class="form-group">
+                <label>Correo</label>
+                <input type="email" placeholder="usuario@empresa.com" />
+            </div>
+
+            <div class="form-group">
+                <label>Contraseña</label>
+                <input type="password" placeholder="Contraseña temporal" />
+            </div>
+
+            <div class="form-group">
+                <label>Rol</label>
+                <select>
+                    @foreach (var rol in roles)
+                    {
+                        <option value="@rol.IdRol">@rol.NombreRol</option>
+                    }
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div class="actions">
+        <a asp-controller="Usuarios" asp-action="Index" class="btn btn-outline">Cancelar</a>
+        <button class="btn btn-primary">Guardar usuario</button>
+    </div>
+</div>

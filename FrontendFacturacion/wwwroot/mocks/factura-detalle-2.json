@@ -1,0 +1,78 @@
+{
+  "factura": {
+    "idFactura": 2,
+    "dpiClienteFactura": "1874521470101",
+    "nombreCliente": "María Fernanda",
+    "apellidoCliente": "López Ruiz",
+    "dpiUsuarioFactura": "1029485760101",
+    "nombreUsuario": "María Elena",
+    "apellidoUsuario": "Gómez Ruiz",
+    "numeroFactura": "F-002",
+    "fechaEmisionFactura": "2026-05-06T11:00:00",
+    "fechaVencimientoFactura": "2026-05-20",
+    "estadoFactura": "PENDIENTE",
+    "subtotalFactura": 1250.00,
+    "totalFactura": 1250.00,
+    "monedaFactura": "GTQ",
+    "fechaCreacionFactura": "2026-05-06",
+    "fechaActualizacionFactura": "2026-05-06"
+  },
+  "cliente": {
+    "dpiCliente": "1874521470101",
+    "nombreCliente": "María Fernanda",
+    "apellidoCliente": "López Ruiz",
+    "correoCliente": "mlopez@empresa.com",
+    "telefonoCliente": "4444-9876",
+    "fechaCreacionCliente": "2026-05-02",
+    "fechaActualizacionCliente": "2026-05-06"
+  },
+  "usuario": {
+    "dpiUsuario": "1029485760101",
+    "nombreUsuario": "María Elena",
+    "apellidoUsuario": "Gómez Ruiz",
+    "correoUsuario": "maria@empresa.com",
+    "idRol": 2,
+    "nombreRol": "Vendedor",
+    "fechaCreacionUsuario": "2026-05-02",
+    "fechaActualizacionUsuario": "2026-05-06"
+  },
+  "detalles": [
+    {
+      "idDetalleFactura": 2,
+      "idFacturaDetalleFactura": 2,
+      "codigoProductoDetalleFactura": "IMP-001",
+      "nombreProducto": "Implementación de sistema",
+      "cantidadDetalleFactura": 1,
+      "precioUnitarioDetalleFactura": 500.00
+    },
+    {
+      "idDetalleFactura": 3,
+      "idFacturaDetalleFactura": 2,
+      "codigoProductoDetalleFactura": "SOF-001",
+      "nombreProducto": "Licencia de software administrativo",
+      "cantidadDetalleFactura": 1,
+      "precioUnitarioDetalleFactura": 300.00
+    },
+    {
+      "idDetalleFactura": 4,
+      "idFacturaDetalleFactura": 2,
+      "codigoProductoDetalleFactura": "SRV-001",
+      "nombreProducto": "Servicio de soporte técnico",
+      "cantidadDetalleFactura": 3,
+      "precioUnitarioDetalleFactura": 150.00
+    }
+  ],
+  "pagos": [
+    {
+      "idPago": 2,
+      "idFacturaPago": 2,
+      "numeroFactura": "F-002",
+      "fechaPago": "2026-05-06T12:00:00",
+      "montoPago": 1250.00,
+      "metodoPago": "TRANSFERENCIA",
+      "numeroReferenciaPago": "TRX-001",
+      "estadoPago": "PENDIENTE",
+      "fechaCreacionPago": "2026-05-06"
+    }
+  ]
+}

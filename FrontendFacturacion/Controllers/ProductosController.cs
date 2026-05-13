@@ -17,5 +17,11 @@ namespace FrontendFacturacion.Controllers
             var productos = await _api.ObtenerProductosAsync();
             return View(productos);
         }
+
+        public async Task<IActionResult> Create()
+        {
+            ViewBag.Categorias = await _api.ObtenerCategoriasAsync();
+            return View();
+        }
     }
 }

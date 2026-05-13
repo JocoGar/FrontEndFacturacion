@@ -11,7 +11,7 @@
 <div class="page-title">
     <div>
         <h2>Crear Nueva Factura</h2>
-        <p>Complete los datos generales y el detalle de productos.</p>
+        <p>Complete los datos generales y el detalle de productos o servicios.</p>
     </div>
 
     <a asp-controller="Facturas" asp-action="Index" class="btn btn-outline">Regresar</a>
@@ -66,18 +66,20 @@
                 <select>
                     <option>PENDIENTE</option>
                     <option>PAGADA</option>
+                    <option>ANULADA</option>
+                    <option>VENCIDA</option>
                 </select>
             </div>
         </div>
     </div>
 
     <div class="form-section">
-        <h3>2. Detalle de productos</h3>
+        <h3>2. Detalle de productos o servicios</h3>
 
         <table>
             <thead>
                 <tr>
-                    <th>Producto</th>
+                    <th>Producto / Servicio</th>
                     <th class="text-center">Cantidad</th>
                     <th class="text-right">Precio unitario</th>
                     <th class="text-right">Subtotal</th>
@@ -97,10 +99,10 @@
                         </select>
                     </td>
                     <td class="text-center">
-                        <input type="number" value="1" />
+                        <input type="number" value="1" min="1" />
                     </td>
                     <td class="text-right">
-                        <input type="number" value="150.00" />
+                        <input type="number" value="150.00" step="0.01" />
                     </td>
                     <td class="text-right">Q150.00</td>
                     <td class="text-right">
@@ -111,17 +113,13 @@
         </table>
 
         <br />
-        <button class="btn btn-outline">Agregar producto</button>
+        <button class="btn btn-outline">Agregar producto/servicio</button>
     </div>
 
     <div class="summary-box">
         <div class="summary-row">
             <span>Subtotal</span>
             <span>Q150.00</span>
-        </div>
-        <div class="summary-row">
-            <span>Descuento</span>
-            <span>Q0.00</span>
         </div>
         <div class="summary-row summary-total">
             <span>Total</span>

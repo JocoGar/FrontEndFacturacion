@@ -17,5 +17,10 @@ namespace FrontendFacturacion.Controllers
             var clientes = await _api.ObtenerClientesAsync();
             return View(clientes);
         }
+
+        public IActionResult Create()
+        {
+            return View();
+        }
     }
 }

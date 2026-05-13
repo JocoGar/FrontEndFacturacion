@@ -1,0 +1,38 @@
+[
+  {
+    "idProducto": 1,
+    "codigoProducto": "SRV-001",
+    "idCategoriaProducto": 1,
+    "nombreCategoriaProducto": "Servicios IT",
+    "nombreProducto": "Servicio de soporte técnico",
+    "descripcionProducto": "Atención técnica y mantenimiento preventivo.",
+    "precioUnitarioProducto": 150.00,
+    "precioCostoProducto": 80.00,
+    "fechaCreacionProducto": "2026-05-01",
+    "fechaActualizacionProducto": "2026-05-06"
+  },
+  {
+    "idProducto": 2,
+    "codigoProducto": "SOF-001",
+    "idCategoriaProducto": 2,
+    "nombreCategoriaProducto": "Software",
+    "nombreProducto": "Licencia de software administrativo",
+    "descripcionProducto": "Licencia anual para sistema administrativo.",
+    "precioUnitarioProducto": 300.00,
+    "precioCostoProducto": 180.00,
+    "fechaCreacionProducto": "2026-05-01",
+    "fechaActualizacionProducto": "2026-05-06"
+  },
+  {
+    "idProducto": 3,
+    "codigoProducto": "IMP-001",
+    "idCategoriaProducto": 3,
+    "nombreCategoriaProducto": "Implementación",
+    "nombreProducto": "Implementación de sistema",
+    "descripcionProducto": "Configuración inicial y capacitación básica.",
+    "precioUnitarioProducto": 500.00,
+    "precioCostoProducto": 250.00,
+    "fechaCreacionProducto": "2026-05-02",
+    "fechaActualizacionProducto": "2026-05-06"
+  }
+]

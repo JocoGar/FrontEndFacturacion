@@ -17,5 +17,11 @@ namespace FrontendFacturacion.Controllers
             var usuarios = await _api.ObtenerUsuariosAsync();
             return View(usuarios);
         }
+
+        public async Task<IActionResult> Create()
+        {
+            ViewBag.Roles = await _api.ObtenerRolesAsync();
+            return View();
+        }
     }
 }

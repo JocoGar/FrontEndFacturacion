@@ -17,5 +17,10 @@ namespace FrontendFacturacion.Controllers
             var roles = await _api.ObtenerRolesAsync();
             return View(roles);
         }
+
+        public IActionResult Create()
+        {
+            return View();
+        }
     }
 }

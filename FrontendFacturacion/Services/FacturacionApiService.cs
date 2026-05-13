@@ -6,12 +6,17 @@ namespace FrontendFacturacion.Services
     {
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
+        private readonly IWebHostEnvironment _environment;
         private readonly JsonSerializerOptions _jsonOptions;
 
-        public FacturacionApiService(HttpClient httpClient, IConfiguration configuration)
+        public FacturacionApiService(
+            HttpClient httpClient,
+            IConfiguration configuration,
+            IWebHostEnvironment environment)
         {
             _httpClient = httpClient;
             _configuration = configuration;
+            _environment = environment;
 
             _jsonOptions = new JsonSerializerOptions
             {
@@ -19,73 +24,118 @@ namespace FrontendFacturacion.Services
             };
         }
 
-        private bool UsarDatosDemo()
+        private bool UsarMocks()
         {
-            return _configuration.GetValue<bool>("ApiSettings:UseDemoData");
+            return _configuration.GetValue<bool>("ApiSettings:UseMockData");
         }
 
-        private async Task<List<T>> GetListOrDemoAsync<T>(string endpoint, List<T> demoData)
+        private bool UsarFallbackSiApiFalla()
         {
-            if (UsarDatosDemo())
-                return demoData;
+            return _configuration.GetValue<bool>("ApiSettings:UseFallbackMockWhenApiFails", true);
+        }
+
+        private int ObtenerTimeout()
+        {
+            return _configuration.GetValue<int>("ApiSettings:TimeoutSeconds", 2);
+        }
+
+        private string ObtenerRutaMock(string archivo)
+        {
+            return Path.Combine(_environment.WebRootPath, "mocks", archivo);
+        }
+
+        private async Task<List<T>> LeerListaMockAsync<T>(string archivo)
+        {
+            var ruta = ObtenerRutaMock(archivo);
+
+            if (!File.Exists(ruta))
+                return new List<T>();
+
+            var json = await File.ReadAllTextAsync(ruta);
+            return JsonSerializer.Deserialize<List<T>>(json, _jsonOptions) ?? new List<T>();
+        }
+
+        private async Task<T> LeerObjetoMockAsync<T>(string archivo, T valorDefault)
+        {
+            var ruta = ObtenerRutaMock(archivo);
+
+            if (!File.Exists(ruta))
+                return valorDefault;
+
+            var json = await File.ReadAllTextAsync(ruta);
+            return JsonSerializer.Deserialize<T>(json, _jsonOptions) ?? valorDefault;
+        }
+
+        private async Task<List<T>> GetListAsync<T>(string endpoint, string mockFile)
+        {
+            if (UsarMocks())
+                return await LeerListaMockAsync<T>(mockFile);
 
             try
             {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(
-                    _configuration.GetValue<int>("ApiSettings:TimeoutSeconds", 1)
-                ));
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
 
                 var response = await _httpClient.GetAsync(endpoint, cts.Token);
 
                 if (!response.IsSuccessStatusCode)
-                    return demoData;
+                {
+                    if (UsarFallbackSiApiFalla())
+                        return await LeerListaMockAsync<T>(mockFile);
+
+                    return new List<T>();
+                }
 
                 var json = await response.Content.ReadAsStringAsync(cts.Token);
-                var data = JsonSerializer.Deserialize<List<T>>(json, _jsonOptions);
-
-                return data ?? demoData;
+                return JsonSerializer.Deserialize<List<T>>(json, _jsonOptions) ?? new List<T>();
             }
             catch
             {
-                return demoData;
+                if (UsarFallbackSiApiFalla())
+                    return await LeerListaMockAsync<T>(mockFile);
+
+                return new List<T>();
             }
         }
 
-        private async Task<T> GetOneOrDemoAsync<T>(string endpoint, T demoData)
+        private async Task<T> GetObjectAsync<T>(string endpoint, string mockFile, T valorDefault)
         {
-            if (UsarDatosDemo())
-                return demoData;
+            if (UsarMocks())
+                return await LeerObjetoMockAsync(mockFile, valorDefault);
 
             try
             {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(
-                    _configuration.GetValue<int>("ApiSettings:TimeoutSeconds", 1)
-                ));
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
 
                 var response = await _httpClient.GetAsync(endpoint, cts.Token);
 
                 if (!response.IsSuccessStatusCode)
-                    return demoData;
+                {
+                    if (UsarFallbackSiApiFalla())
+                        return await LeerObjetoMockAsync(mockFile, valorDefault);
+
+                    return valorDefault;
+                }
 
                 var json = await response.Content.ReadAsStringAsync(cts.Token);
-                var data = JsonSerializer.Deserialize<T>(json, _jsonOptions);
-
-                return data ?? demoData;
+                return JsonSerializer.Deserialize<T>(json, _jsonOptions) ?? valorDefault;
             }
             catch
             {
-                return demoData;
+                if (UsarFallbackSiApiFalla())
+                    return await LeerObjetoMockAsync(mockFile, valorDefault);
+
+                return valorDefault;
             }
         }
 
         public async Task<bool> ApiDisponibleAsync()
         {
-            if (UsarDatosDemo())
+            if (UsarMocks())
                 return false;
 
             try
             {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
                 var response = await _httpClient.GetAsync("/api/health", cts.Token);
                 return response.IsSuccessStatusCode;
             }
@@ -95,55 +145,51 @@ namespace FrontendFacturacion.Services
             }
         }
 
-        public async Task<List<ProductoDto>> ObtenerProductosAsync()
-        {
-            return await GetListOrDemoAsync("/api/productos", DatosDemo.Productos);
-        }
-
         public async Task<List<CategoriaDto>> ObtenerCategoriasAsync()
         {
-            return await GetListOrDemoAsync("/api/categorias", DatosDemo.Categorias);
+            return await GetListAsync<CategoriaDto>("/api/categorias", "categorias.json");
+        }
+
+        public async Task<List<ProductoDto>> ObtenerProductosAsync()
+        {
+            return await GetListAsync<ProductoDto>("/api/productos", "productos.json");
         }
 
         public async Task<List<ClienteDto>> ObtenerClientesAsync()
         {
-            return await GetListOrDemoAsync("/api/clientes", DatosDemo.Clientes);
-        }
-
-        public async Task<List<FacturaDto>> ObtenerFacturasAsync()
-        {
-            return await GetListOrDemoAsync("/api/facturas", DatosDemo.Facturas);
-        }
-
-        public async Task<FacturaDetalleViewModel> ObtenerDetalleFacturaAsync(int id)
-        {
-            return await GetOneOrDemoAsync($"/api/facturas/{id}", DatosDemo.DetalleFactura);
-        }
-
-        public async Task<List<PagoDto>> ObtenerPagosAsync()
-        {
-            return await GetListOrDemoAsync("/api/pagos", DatosDemo.Pagos);
-        }
-
-        public async Task<List<UsuarioDto>> ObtenerUsuariosAsync()
-        {
-            return await GetListOrDemoAsync("/api/usuarios", DatosDemo.Usuarios);
+            return await GetListAsync<ClienteDto>("/api/clientes", "clientes.json");
         }
 
         public async Task<List<RolDto>> ObtenerRolesAsync()
         {
-            return await GetListOrDemoAsync("/api/roles", DatosDemo.Roles);
+            return await GetListAsync<RolDto>("/api/roles", "roles.json");
         }
-    }
 
-    public class ProductoDto
-    {
-        public string CodigoProducto { get; set; } = "";
-        public string NombreProducto { get; set; } = "";
-        public string Categoria { get; set; } = "";
-        public string DescripcionProducto { get; set; } = "";
-        public decimal PrecioUnitarioProducto { get; set; }
-        public decimal PrecioCostoProducto { get; set; }
+        public async Task<List<UsuarioDto>> ObtenerUsuariosAsync()
+        {
+            return await GetListAsync<UsuarioDto>("/api/usuarios", "usuarios.json");
+        }
+
+        public async Task<List<FacturaDto>> ObtenerFacturasAsync()
+        {
+            return await GetListAsync<FacturaDto>("/api/facturas", "facturas.json");
+        }
+
+        public async Task<FacturaDetalleViewModel> ObtenerDetalleFacturaAsync(int id)
+        {
+            var archivoMock = $"factura-detalle-{id}.json";
+
+            return await GetObjectAsync(
+                $"/api/facturas/{id}",
+                archivoMock,
+                new FacturaDetalleViewModel()
+            );
+        }
+
+        public async Task<List<PagoDto>> ObtenerPagosAsync()
+        {
+            return await GetListAsync<PagoDto>("/api/pagos", "pagos.json");
+        }
     }
 
     public class CategoriaDto
@@ -152,6 +198,23 @@ namespace FrontendFacturacion.Services
         public string NombreCategoriaProducto { get; set; } = "";
         public string DescripcionCategoriaProducto { get; set; } = "";
         public DateTime FechaCreacionCategoriaProducto { get; set; }
+        public DateTime? FechaActualizacionCategoriaProducto { get; set; }
+    }
+
+    public class ProductoDto
+    {
+        public int IdProducto { get; set; }
+        public string CodigoProducto { get; set; } = "";
+        public int IdCategoriaProducto { get; set; }
+        public string NombreCategoriaProducto { get; set; } = "";
+        public string NombreProducto { get; set; } = "";
+        public string DescripcionProducto { get; set; } = "";
+        public decimal PrecioUnitarioProducto { get; set; }
+        public decimal PrecioCostoProducto { get; set; }
+        public DateTime FechaCreacionProducto { get; set; }
+        public DateTime? FechaActualizacionProducto { get; set; }
+
+        public string Categoria => NombreCategoriaProducto;
     }
 
     public class ClienteDto
@@ -161,39 +224,14 @@ namespace FrontendFacturacion.Services
         public string ApellidoCliente { get; set; } = "";
         public string CorreoCliente { get; set; } = "";
         public string TelefonoCliente { get; set; } = "";
+        public DateTime FechaCreacionCliente { get; set; }
+        public DateTime? FechaActualizacionCliente { get; set; }
     }
 
-    public class FacturaDto
+    public class RolDto
     {
-        public int IdFactura { get; set; }
-        public string NumeroFactura { get; set; } = "";
-        public string Cliente { get; set; } = "";
-        public string Usuario { get; set; } = "";
-        public DateTime FechaEmisionFactura { get; set; }
-        public string EstadoFactura { get; set; } = "";
-        public decimal SubtotalFactura { get; set; }
-        public decimal TotalFactura { get; set; }
-        public string MonedaFactura { get; set; } = "GTQ";
-    }
-
-    public class DetalleFacturaDto
-    {
-        public string CodigoProducto { get; set; } = "";
-        public string NombreProducto { get; set; } = "";
-        public int Cantidad { get; set; }
-        public decimal PrecioUnitario { get; set; }
-        public decimal Subtotal => Cantidad * PrecioUnitario;
-    }
-
-    public class PagoDto
-    {
-        public int IdPago { get; set; }
-        public string NumeroFactura { get; set; } = "";
-        public DateTime FechaPago { get; set; }
-        public decimal MontoPago { get; set; }
-        public string MetodoPago { get; set; } = "";
-        public string NumeroReferenciaPago { get; set; } = "";
-        public string EstadoPago { get; set; } = "";
+        public int IdRol { get; set; }
+        public string NombreRol { get; set; } = "";
     }
 
     public class UsuarioDto
@@ -202,14 +240,63 @@ namespace FrontendFacturacion.Services
         public string NombreUsuario { get; set; } = "";
         public string ApellidoUsuario { get; set; } = "";
         public string CorreoUsuario { get; set; } = "";
-        public string Rol { get; set; } = "";
-    }
-
-    public class RolDto
-    {
         public int IdRol { get; set; }
         public string NombreRol { get; set; } = "";
-        public string Descripcion { get; set; } = "";
+        public DateTime FechaCreacionUsuario { get; set; }
+        public DateTime? FechaActualizacionUsuario { get; set; }
+
+        public string Rol => NombreRol;
+    }
+
+    public class FacturaDto
+    {
+        public int IdFactura { get; set; }
+        public string DpiClienteFactura { get; set; } = "";
+        public string NombreCliente { get; set; } = "";
+        public string ApellidoCliente { get; set; } = "";
+        public string DpiUsuarioFactura { get; set; } = "";
+        public string NombreUsuario { get; set; } = "";
+        public string ApellidoUsuario { get; set; } = "";
+        public string NumeroFactura { get; set; } = "";
+        public DateTime FechaEmisionFactura { get; set; }
+        public DateTime? FechaVencimientoFactura { get; set; }
+        public string EstadoFactura { get; set; } = "";
+        public decimal SubtotalFactura { get; set; }
+        public decimal TotalFactura { get; set; }
+        public string MonedaFactura { get; set; } = "GTQ";
+        public DateTime FechaCreacionFactura { get; set; }
+        public DateTime? FechaActualizacionFactura { get; set; }
+
+        public string Cliente => $"{NombreCliente} {ApellidoCliente}".Trim();
+        public string Usuario => $"{NombreUsuario} {ApellidoUsuario}".Trim();
+    }
+
+    public class DetalleFacturaDto
+    {
+        public int IdDetalleFactura { get; set; }
+        public int IdFacturaDetalleFactura { get; set; }
+        public string CodigoProductoDetalleFactura { get; set; } = "";
+        public string NombreProducto { get; set; } = "";
+        public int CantidadDetalleFactura { get; set; }
+        public decimal PrecioUnitarioDetalleFactura { get; set; }
+
+        public string CodigoProducto => CodigoProductoDetalleFactura;
+        public int Cantidad => CantidadDetalleFactura;
+        public decimal PrecioUnitario => PrecioUnitarioDetalleFactura;
+        public decimal Subtotal => CantidadDetalleFactura * PrecioUnitarioDetalleFactura;
+    }
+
+    public class PagoDto
+    {
+        public int IdPago { get; set; }
+        public int IdFacturaPago { get; set; }
+        public string NumeroFactura { get; set; } = "";
+        public DateTime FechaPago { get; set; }
+        public decimal MontoPago { get; set; }
+        public string MetodoPago { get; set; } = "";
+        public string NumeroReferenciaPago { get; set; } = "";
+        public string EstadoPago { get; set; } = "";
+        public DateTime FechaCreacionPago { get; set; }
     }
 
     public class DashboardViewModel
@@ -230,118 +317,5 @@ namespace FrontendFacturacion.Services
         public UsuarioDto Usuario { get; set; } = new();
         public List<DetalleFacturaDto> Detalles { get; set; } = new();
         public List<PagoDto> Pagos { get; set; } = new();
-    }
-
-    public static class DatosDemo
-    {
-        public static List<CategoriaDto> Categorias = new()
-        {
-            new CategoriaDto { IdCategoriaProducto = 1, NombreCategoriaProducto = "Hardware", DescripcionCategoriaProducto = "Componentes físicos y equipos electrónicos.", FechaCreacionCategoriaProducto = DateTime.Now.AddDays(-10) },
-            new CategoriaDto { IdCategoriaProducto = 2, NombreCategoriaProducto = "Software", DescripcionCategoriaProducto = "Licencias, programas y suscripciones.", FechaCreacionCategoriaProducto = DateTime.Now.AddDays(-8) },
-            new CategoriaDto { IdCategoriaProducto = 3, NombreCategoriaProducto = "Servicios IT", DescripcionCategoriaProducto = "Soporte técnico, mantenimiento y consultoría.", FechaCreacionCategoriaProducto = DateTime.Now.AddDays(-5) }
-        };
-
-        public static List<ProductoDto> Productos = new()
-{
-    new ProductoDto
-    {
-        CodigoProducto = "PRD-001",
-        NombreProducto = "Servicio de soporte técnico",
-        Categoria = "Servicios IT",
-        DescripcionProducto = "Atención técnica y mantenimiento preventivo.",
-        PrecioUnitarioProducto = 150,
-        PrecioCostoProducto = 80
-    },
-    new ProductoDto
-    {
-        CodigoProducto = "PRD-002",
-        NombreProducto = "Licencia de software",
-        Categoria = "Software",
-        DescripcionProducto = "Licencia anual de sistema administrativo.",
-        PrecioUnitarioProducto = 300,
-        PrecioCostoProducto = 180
-    },
-    new ProductoDto
-    {
-        CodigoProducto = "PRD-003",
-        NombreProducto = "Implementación de sistema",
-        Categoria = "Servicios IT",
-        DescripcionProducto = "Configuración inicial y capacitación básica.",
-        PrecioUnitarioProducto = 500,
-        PrecioCostoProducto = 250
-    }
-};
-
-        public static List<ClienteDto> Clientes = new()
-        {
-            new ClienteDto { DpiCliente = "2548963210101", NombreCliente = "Juan Carlos", ApellidoCliente = "Pérez Gómez", CorreoCliente = "jperez@empresa.com", TelefonoCliente = "5555-1234" },
-            new ClienteDto { DpiCliente = "1874521470101", NombreCliente = "María Fernanda", ApellidoCliente = "López Ruiz", CorreoCliente = "mlopez@empresa.com", TelefonoCliente = "4444-9876" },
-            new ClienteDto { DpiCliente = "3210654870301", NombreCliente = "Roberto Antonio", ApellidoCliente = "García Méndez", CorreoCliente = "roberto@empresa.com", TelefonoCliente = "3333-5678" }
-        };
-
-        public static List<FacturaDto> Facturas = new()
-        {
-            new FacturaDto { IdFactura = 1, NumeroFactura = "F-001", Cliente = "Juan Pérez", Usuario = "Admin", FechaEmisionFactura = DateTime.Now, EstadoFactura = "PAGADA", SubtotalFactura = 150, TotalFactura = 150 },
-            new FacturaDto { IdFactura = 2, NumeroFactura = "F-002", Cliente = "Empresa ABC", Usuario = "Admin", FechaEmisionFactura = DateTime.Now, EstadoFactura = "PENDIENTE", SubtotalFactura = 1250, TotalFactura = 1250 },
-            new FacturaDto { IdFactura = 3, NumeroFactura = "F-003", Cliente = "Carlos López", Usuario = "Admin", FechaEmisionFactura = DateTime.Now.AddDays(-1), EstadoFactura = "VENCIDA", SubtotalFactura = 300, TotalFactura = 300 }
-        };
-
-        public static List<PagoDto> Pagos = new()
-        {
-            new PagoDto { IdPago = 1, NumeroFactura = "F-001", FechaPago = DateTime.Now, MontoPago = 150, MetodoPago = "EFECTIVO", NumeroReferenciaPago = "CAJA-01", EstadoPago = "REGISTRADO" },
-            new PagoDto { IdPago = 2, NumeroFactura = "F-002", FechaPago = DateTime.Now, MontoPago = 1250, MetodoPago = "TRANSFERENCIA", NumeroReferenciaPago = "TRX-001", EstadoPago = "PENDIENTE" }
-        };
-
-        public static List<UsuarioDto> Usuarios = new()
-        {
-            new UsuarioDto { DpiUsuario = "2948302910101", NombreUsuario = "Carlos Arturo", ApellidoUsuario = "Méndez López", CorreoUsuario = "carlos@empresa.com", Rol = "Administrador" },
-            new UsuarioDto { DpiUsuario = "1029485760101", NombreUsuario = "María Elena", ApellidoUsuario = "Gómez Ruiz", CorreoUsuario = "maria@empresa.com", Rol = "Vendedor" }
-        };
-
-        public static List<RolDto> Roles = new()
-        {
-            new RolDto { IdRol = 1, NombreRol = "Administrador", Descripcion = "Acceso completo al sistema." },
-            new RolDto { IdRol = 2, NombreRol = "Vendedor", Descripcion = "Puede registrar clientes, facturas y pagos." },
-            new RolDto { IdRol = 3, NombreRol = "Consulta", Descripcion = "Solo puede visualizar información." }
-        };
-
-        public static FacturaDetalleViewModel DetalleFactura = new()
-        {
-            Factura = new FacturaDto
-            {
-                IdFactura = 1,
-                NumeroFactura = "F-001",
-                Cliente = "Juan Pérez",
-                Usuario = "Admin",
-                FechaEmisionFactura = DateTime.Now,
-                EstadoFactura = "PAGADA",
-                SubtotalFactura = 150,
-                TotalFactura = 150
-            },
-            Cliente = new ClienteDto
-            {
-                DpiCliente = "2548963210101",
-                NombreCliente = "Juan Carlos",
-                ApellidoCliente = "Pérez Gómez",
-                CorreoCliente = "jperez@empresa.com",
-                TelefonoCliente = "5555-1234"
-            },
-            Usuario = new UsuarioDto
-            {
-                DpiUsuario = "2948302910101",
-                NombreUsuario = "Admin",
-                ApellidoUsuario = "Sistema",
-                CorreoUsuario = "admin@empresa.com",
-                Rol = "Administrador"
-            },
-            Detalles = new List<DetalleFacturaDto>
-            {
-                new DetalleFacturaDto { CodigoProducto = "PRD-001", NombreProducto = "Monitor Dell 27\"", Cantidad = 1, PrecioUnitario = 150 }
-            },
-            Pagos = new List<PagoDto>
-            {
-                new PagoDto { IdPago = 1, NumeroFactura = "F-001", FechaPago = DateTime.Now, MontoPago = 150, MetodoPago = "EFECTIVO", NumeroReferenciaPago = "CAJA-01", EstadoPago = "REGISTRADO" }
-            }
-        };
     }
 }

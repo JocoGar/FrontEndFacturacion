@@ -1,0 +1,30 @@
+﻿@{
+    ViewData["Title"] = "Crear Rol";
+}
+
+<div class="page-title">
+    <div>
+        <h2>Crear Rol</h2>
+        <p>Formulario preparado para registrar roles del sistema.</p>
+    </div>
+
+    <a asp-controller="Roles" asp-action="Index" class="btn btn-outline">Regresar</a>
+</div>
+
+<div class="form-card">
+    <div class="form-section">
+        <h3>Datos del rol</h3>
+
+        <div class="grid grid-2">
+            <div class="form-group">
+                <label>Nombre del rol</label>
+                <input type="text" placeholder="Ejemplo: Administrador" />
+            </div>
+        </div>
+    </div>
+
+    <div class="actions">
+        <a asp-controller="Roles" asp-action="Index" class="btn btn-outline">Cancelar</a>
+        <button class="btn btn-primary">Guardar rol</button>
+    </div>
+</div>

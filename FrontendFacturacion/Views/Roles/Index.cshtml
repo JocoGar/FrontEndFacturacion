@@ -10,7 +10,7 @@
         <p>Catálogo de roles del sistema.</p>
     </div>
 
-    <button class="btn btn-primary">Crear rol</button>
+    <a asp-controller="Roles" asp-action="Create" class="btn btn-primary">Crear rol</a>
 </div>
 
 <div class="table-card">
@@ -23,7 +23,6 @@
             <tr>
                 <th>ID</th>
                 <th>Nombre del rol</th>
-                <th>Descripción</th>
                 <th class="text-right">Acciones</th>
             </tr>
         </thead>
@@ -33,7 +32,6 @@
                 <tr>
                     <td>@rol.IdRol</td>
                     <td>@rol.NombreRol</td>
-                    <td>@rol.Descripcion</td>
                     <td>
                         <div class="actions">
                             <button class="action-btn">Editar</button>
