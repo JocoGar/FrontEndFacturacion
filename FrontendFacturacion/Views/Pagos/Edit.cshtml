@@ -2,59 +2,48 @@
 @model FrontendFacturacion.Services.PagoDto
 
 @{
-    ViewData["Title"] = "Registrar Pago";
-
+    ViewData["Title"] = "Editar Pago";
     var facturas = ViewBag.Facturas as List<FacturaDto> ?? new();
-    int? idFacturaSeleccionada = ViewBag.IdFacturaSeleccionada as int?;
 }
 
 <div class="page-title">
     <div>
-        <h2>Registrar Pago</h2>
-        <p>Formulario para registrar el pago de una factura.</p>
+        <h2>Editar Pago</h2>
+        <p>Modificación de pago registrado.</p>
     </div>
 
     <a asp-controller="Pagos" asp-action="Index" class="btn btn-outline">Regresar</a>
 </div>
 
 <div class="form-card">
-    <form asp-controller="Pagos" asp-action="Create" method="post">
+    <form asp-action="Edit" asp-route-id="@Model.IdPago" method="post">
         <div class="form-section">
             <h3>Datos del pago</h3>
 
             <div class="grid grid-3">
                 <div class="form-group">
                     <label>Factura</label>
-                    <select asp-for="IdFacturaPago" required>
-                        <option value="">Seleccione una factura</option>
-
+                    <select asp-for="IdFacturaPago">
                         @foreach (var factura in facturas)
                         {
-                            if (idFacturaSeleccionada == factura.IdFactura)
-                            {
-                                <option value="@factura.IdFactura" selected>@factura.NumeroFactura - @factura.Cliente</option>
-                            }
-                            else
-                            {
-                                <option value="@factura.IdFactura">@factura.NumeroFactura - @factura.Cliente</option>
-                            }
+                            <option value="@factura.IdFactura">@factura.NumeroFactura - @factura.Cliente</option>
                         }
                     </select>
                 </div>
 
                 <div class="form-group">
                     <label>Fecha de pago</label>
-                    <input asp-for="FechaPago" type="datetime-local" value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" required />
+                    <input asp-for="FechaPago" type="datetime-local" />
                 </div>
 
                 <div class="form-group">
                     <label>Monto</label>
-                    <input asp-for="MontoPago" type="number" value="150.00" step="0.01" min="0" required />
+                    <input asp-for="MontoPago" type="number" step="0.01" />
                 </div>
 
                 <div class="form-group">
                     <label>Método de pago</label>
-                    <select asp-for="MetodoPago" required>
+                    <select asp-for="MetodoPago">
                         <option>EFECTIVO</option>
                         <option>TARJETA</option>
                         <option>TRANSFERENCIA</option>
@@ -64,12 +53,12 @@
 
                 <div class="form-group">
                     <label>Número de referencia</label>
-                    <input asp-for="NumeroReferenciaPago" placeholder="Ejemplo: CAJA-01 o TRX-001" />
+                    <input asp-for="NumeroReferenciaPago" />
                 </div>
 
                 <div class="form-group">
                     <label>Estado</label>
-                    <select asp-for="EstadoPago" required>
+                    <select asp-for="EstadoPago">
                         <option>REGISTRADO</option>
                         <option>PENDIENTE</option>
                         <option>ANULADO</option>
@@ -80,7 +69,7 @@
 
         <div class="actions">
             <a asp-controller="Pagos" asp-action="Index" class="btn btn-outline">Cancelar</a>
-            <button class="btn btn-primary" type="submit">Guardar pago</button>
+            <button class="btn btn-primary" type="submit">Guardar cambios</button>
         </div>
     </form>
 </div>

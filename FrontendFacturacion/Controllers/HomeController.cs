@@ -14,11 +14,12 @@ namespace FrontendFacturacion.Controllers
 
         public async Task<IActionResult> Index()
         {
+            var fuenteDatos = await _api.ObtenerFuenteDatosAsync();
+
             var productos = await _api.ObtenerProductosAsync();
             var clientes = await _api.ObtenerClientesAsync();
             var facturas = await _api.ObtenerFacturasAsync();
             var pagos = await _api.ObtenerPagosAsync();
-            var apiDisponible = await _api.ApiDisponibleAsync();
 
             var model = new DashboardViewModel
             {
@@ -27,7 +28,7 @@ namespace FrontendFacturacion.Controllers
                 TotalFacturas = facturas.Count,
                 FacturasPendientes = facturas.Count(f => f.EstadoFactura == "PENDIENTE"),
                 TotalPagos = pagos.Count,
-                ApiDisponible = apiDisponible,
+                ApiDisponible = fuenteDatos.Origen == "API_DUMMY",
                 UltimasFacturas = facturas.Take(5).ToList()
             };
 

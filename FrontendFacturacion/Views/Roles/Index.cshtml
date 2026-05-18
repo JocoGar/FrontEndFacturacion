@@ -16,6 +16,12 @@
 <div class="table-card">
     <div class="table-header">
         <h3>Listado de roles</h3>
+
+        <form method="get" class="search-form">
+            <input type="text" name="buscar" value="@ViewBag.Buscar" placeholder="Buscar por ID o nombre..." />
+            <button class="btn btn-outline" type="submit">Buscar</button>
+            <a asp-action="Index" class="btn btn-outline">Limpiar</a>
+        </form>
     </div>
 
     <table>
@@ -34,7 +40,11 @@
                     <td>@rol.NombreRol</td>
                     <td>
                         <div class="actions">
-                            <button class="action-btn">Editar</button>
+                            <a asp-controller="Roles" asp-action="Edit" asp-route-id="@rol.IdRol" class="action-btn">Editar</a>
+
+                            <form asp-controller="Roles" asp-action="Delete" asp-route-id="@rol.IdRol" method="post" class="inline-form">
+                                <button class="action-btn" type="submit" onclick="return confirm('¿Eliminar rol?')">Eliminar</button>
+                            </form>
                         </div>
                     </td>
                 </tr>

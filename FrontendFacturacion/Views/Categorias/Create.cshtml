@@ -1,40 +1,44 @@
-﻿@{
+﻿@model FrontendFacturacion.Services.CategoriaDto
+
+@{
     ViewData["Title"] = "Crear Categoría";
 }
 
 <div class="page-title">
     <div>
         <h2>Crear Categoría</h2>
-        <p>Formulario de ejemplo para registrar una categoría de producto.</p>
+        <p>Formulario para registrar una categoría de producto o servicio.</p>
     </div>
 
     <a asp-controller="Categorias" asp-action="Index" class="btn btn-outline">Regresar</a>
 </div>
 
 <div class="form-card">
-    <div class="form-section">
-        <h3>Datos de la categoría</h3>
+    <form asp-controller="Categorias" asp-action="Create" method="post">
+        <div class="form-section">
+            <h3>Datos de la categoría</h3>
 
-        <div class="grid grid-2">
-            <div class="form-group">
-                <label>Nombre de categoría</label>
-                <input type="text" placeholder="Ejemplo: Hardware" />
-            </div>
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label>Nombre de categoría</label>
+                    <input asp-for="NombreCategoriaProducto" type="text" placeholder="Ejemplo: Servicios IT" required />
+                </div>
 
-            <div class="form-group">
-                <label>Fecha de creación</label>
-                <input type="date" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
-            </div>
+                <div class="form-group">
+                    <label>Fecha de creación</label>
+                    <input asp-for="FechaCreacionCategoriaProducto" type="date" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                </div>
 
-            <div class="form-group" style="grid-column: 1 / -1;">
-                <label>Descripción</label>
-                <textarea placeholder="Descripción de la categoría"></textarea>
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>Descripción</label>
+                    <textarea asp-for="DescripcionCategoriaProducto" placeholder="Descripción de la categoría"></textarea>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="actions">
-        <a asp-controller="Categorias" asp-action="Index" class="btn btn-outline">Cancelar</a>
-        <button class="btn btn-primary">Guardar categoría</button>
-    </div>
+        <div class="actions">
+            <a asp-controller="Categorias" asp-action="Index" class="btn btn-outline">Cancelar</a>
+            <button class="btn btn-primary" type="submit">Guardar categoría</button>
+        </div>
+    </form>
 </div>

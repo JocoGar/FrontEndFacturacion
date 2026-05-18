@@ -41,7 +41,12 @@
 <div class="table-card">
     <div class="table-header">
         <h3>Últimos pagos registrados</h3>
-        <input type="text" placeholder="Buscar por factura..." />
+
+        <form method="get" class="search-form">
+            <input type="text" name="buscar" value="@ViewBag.Buscar" placeholder="Buscar por factura, método, referencia o estado..." />
+            <button class="btn btn-outline" type="submit">Buscar</button>
+            <a asp-action="Index" class="btn btn-outline">Limpiar</a>
+        </form>
     </div>
 
     <table>
@@ -53,6 +58,7 @@
                 <th>Método</th>
                 <th>Referencia</th>
                 <th>Estado</th>
+                <th class="text-right">Acciones</th>
             </tr>
         </thead>
         <tbody>
@@ -68,6 +74,15 @@
                         <span class="badge @(pago.EstadoPago == "REGISTRADO" ? "badge-green" : pago.EstadoPago == "ANULADO" ? "badge-red" : "badge-yellow")">
                             @pago.EstadoPago
                         </span>
+                    </td>
+                    <td>
+                        <div class="actions">
+                            <a asp-controller="Pagos" asp-action="Edit" asp-route-id="@pago.IdPago" class="action-btn">Editar</a>
+
+                            <form asp-controller="Pagos" asp-action="Delete" asp-route-id="@pago.IdPago" method="post" class="inline-form">
+                                <button class="action-btn" type="submit" onclick="return confirm('¿Eliminar pago?')">Eliminar</button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
             }

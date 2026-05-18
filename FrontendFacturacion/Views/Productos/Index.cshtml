@@ -16,7 +16,12 @@
 <div class="table-card">
     <div class="table-header">
         <h3>Listado de productos y servicios</h3>
-        <input type="text" placeholder="Buscar producto o servicio..." />
+
+        <form method="get" class="search-form">
+            <input type="text" name="buscar" value="@ViewBag.Buscar" placeholder="Buscar producto o servicio..." />
+            <button class="btn btn-outline" type="submit">Buscar</button>
+            <a asp-action="Index" class="btn btn-outline">Limpiar</a>
+        </form>
     </div>
 
     <table>
@@ -45,8 +50,11 @@
                     <td class="text-right">Q@(producto.PrecioCostoProducto.ToString("N2"))</td>
                     <td>
                         <div class="actions">
-                            <button class="action-btn">Editar</button>
-                            <button class="action-btn">Eliminar</button>
+                            <a asp-controller="Productos" asp-action="Edit" asp-route-id="@producto.CodigoProducto" class="action-btn">Editar</a>
+
+                            <form asp-controller="Productos" asp-action="Delete" asp-route-id="@producto.CodigoProducto" method="post" class="inline-form">
+                                <button class="action-btn" type="submit" onclick="return confirm('¿Eliminar producto/servicio?')">Eliminar</button>
+                            </form>
                         </div>
                     </td>
                 </tr>

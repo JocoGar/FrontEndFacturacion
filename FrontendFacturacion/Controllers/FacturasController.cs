@@ -12,9 +12,23 @@ namespace FrontendFacturacion.Controllers
             _api = api;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(string? buscar)
         {
             var facturas = await _api.ObtenerFacturasAsync();
+
+            if (!string.IsNullOrWhiteSpace(buscar))
+            {
+                facturas = facturas
+                    .Where(f =>
+                        f.IdFactura.ToString().Contains(buscar) ||
+                        f.NumeroFactura.Contains(buscar, StringComparison.OrdinalIgnoreCase) ||
+                        f.Cliente.Contains(buscar, StringComparison.OrdinalIgnoreCase) ||
+                        f.Usuario.Contains(buscar, StringComparison.OrdinalIgnoreCase) ||
+                        f.EstadoFactura.Contains(buscar, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            ViewBag.Buscar = buscar;
             return View(facturas);
         }
 
@@ -27,10 +41,38 @@ namespace FrontendFacturacion.Controllers
             return View();
         }
 
+        [HttpPost]
+        public async Task<IActionResult> Create(FacturaCrearViewModel factura)
+        {
+            await _api.CrearFacturaAsync(factura);
+            return RedirectToAction("Index");
+        }
+
         public async Task<IActionResult> Details(int id = 1)
         {
             var detalle = await _api.ObtenerDetalleFacturaAsync(id);
             return View(detalle);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Anular(int id)
+        {
+            await _api.CambiarEstadoFacturaAsync(id, "ANULADA");
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> MarcarPagada(int id)
+        {
+            await _api.CambiarEstadoFacturaAsync(id, "PAGADA");
+            return RedirectToAction("Index");
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Delete(int id)
+        {
+            await _api.EliminarFacturaAsync(id);
+            return RedirectToAction("Index");
         }
     }
 }

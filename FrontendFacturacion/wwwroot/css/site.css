@@ -434,3 +434,21 @@ textarea {
         padding: 18px;
     }
 }
+.search-form {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.inline-form {
+    display: inline;
+}
+
+.btn-danger {
+    background: #b91c1c;
+    color: white;
+}
+
+    .btn-danger:hover {
+        background: #7f1d1d;
+    }
