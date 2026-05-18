@@ -211,6 +211,62 @@ namespace FrontendFacturacion.Services
                 return false;
             }
         }
+        public async Task<FuenteDatosDto> ObtenerFuenteDatosAsync()
+        {
+            if (UsarMocks())
+            {
+                return new FuenteDatosDto
+                {
+                    Origen = "MOCK_JSON",
+                    NombreApi = "Mocks locales",
+                    Ambiente = "Fallback local",
+                    Mensaje = "Datos obtenidos desde archivos JSON locales",
+                    FechaRespuesta = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+                };
+            }
+
+            try
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
+
+                var response = await _httpClient.GetAsync("/api/fuente-datos", cts.Token);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    return new FuenteDatosDto
+                    {
+                        Origen = "MOCK_JSON",
+                        NombreApi = "Mocks locales",
+                        Ambiente = "Fallback local",
+                        Mensaje = "La API respondió con error. Se usaron mocks locales.",
+                        FechaRespuesta = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+                    };
+                }
+
+                var json = await response.Content.ReadAsStringAsync(cts.Token);
+
+                return JsonSerializer.Deserialize<FuenteDatosDto>(json, _jsonOptions)
+                       ?? new FuenteDatosDto
+                       {
+                           Origen = "DESCONOCIDO",
+                           NombreApi = "Respuesta inválida",
+                           Ambiente = "Error",
+                           Mensaje = "La API respondió, pero el JSON no se pudo interpretar.",
+                           FechaRespuesta = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+                       };
+            }
+            catch
+            {
+                return new FuenteDatosDto
+                {
+                    Origen = "MOCK_JSON",
+                    NombreApi = "Mocks locales",
+                    Ambiente = "Fallback local",
+                    Mensaje = "API no disponible. Se usaron mocks locales.",
+                    FechaRespuesta = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+                };
+            }
+        }
         public async Task<List<CategoriaDto>> ObtenerCategoriasAsync()
         {
             return await GetListAsync<CategoriaDto>("/api/categorias", "categorias.json");
@@ -218,13 +274,8 @@ namespace FrontendFacturacion.Services
 
         public async Task<CategoriaDto?> ObtenerCategoriaPorIdAsync(int id)
         {
-            if (UsarMocks())
-            {
-                var categorias = await ObtenerCategoriasAsync();
-                return categorias.FirstOrDefault(c => c.IdCategoriaProducto == id);
-            }
-
-            return await GetObjectAsync<CategoriaDto?>($"/api/categorias/{id}", "categoria-vacia.json", null);
+            var categorias = await ObtenerCategoriasAsync();
+            return categorias.FirstOrDefault(c => c.IdCategoriaProducto == id);
         }
 
         public async Task<bool> CrearCategoriaAsync(CategoriaDto categoria)
@@ -285,13 +336,8 @@ namespace FrontendFacturacion.Services
 
         public async Task<ProductoDto?> ObtenerProductoPorCodigoAsync(string codigo)
         {
-            if (UsarMocks())
-            {
-                var productos = await ObtenerProductosAsync();
-                return productos.FirstOrDefault(p => p.CodigoProducto == codigo);
-            }
-
-            return await GetObjectAsync<ProductoDto?>($"/api/productos/{codigo}", "producto-vacio.json", null);
+            var productos = await ObtenerProductosAsync();
+            return productos.FirstOrDefault(p => p.CodigoProducto == codigo);
         }
 
         public async Task<bool> CrearProductoAsync(ProductoDto producto)
@@ -364,13 +410,8 @@ namespace FrontendFacturacion.Services
 
         public async Task<ClienteDto?> ObtenerClientePorDpiAsync(string dpi)
         {
-            if (UsarMocks())
-            {
-                var clientes = await ObtenerClientesAsync();
-                return clientes.FirstOrDefault(c => c.DpiCliente == dpi);
-            }
-
-            return await GetObjectAsync<ClienteDto?>($"/api/clientes/{dpi}", "cliente-vacio.json", null);
+            var clientes = await ObtenerClientesAsync();
+            return clientes.FirstOrDefault(c => c.DpiCliente == dpi);
         }
 
         public async Task<bool> CrearClienteAsync(ClienteDto cliente)
@@ -432,13 +473,8 @@ namespace FrontendFacturacion.Services
 
         public async Task<RolDto?> ObtenerRolPorIdAsync(int id)
         {
-            if (UsarMocks())
-            {
-                var roles = await ObtenerRolesAsync();
-                return roles.FirstOrDefault(r => r.IdRol == id);
-            }
-
-            return await GetObjectAsync<RolDto?>($"/api/roles/{id}", "rol-vacio.json", null);
+            var roles = await ObtenerRolesAsync();
+            return roles.FirstOrDefault(r => r.IdRol == id);
         }
 
         public async Task<bool> CrearRolAsync(RolDto rol)
@@ -495,13 +531,8 @@ namespace FrontendFacturacion.Services
 
         public async Task<UsuarioDto?> ObtenerUsuarioPorDpiAsync(string dpi)
         {
-            if (UsarMocks())
-            {
-                var usuarios = await ObtenerUsuariosAsync();
-                return usuarios.FirstOrDefault(u => u.DpiUsuario == dpi);
-            }
-
-            return await GetObjectAsync<UsuarioDto?>($"/api/usuarios/{dpi}", "usuario-vacio.json", null);
+            var usuarios = await ObtenerUsuariosAsync();
+            return usuarios.FirstOrDefault(u => u.DpiUsuario == dpi);
         }
 
         public async Task<bool> CrearUsuarioAsync(UsuarioDto usuario)
@@ -697,13 +728,8 @@ namespace FrontendFacturacion.Services
 
         public async Task<PagoDto?> ObtenerPagoPorIdAsync(int id)
         {
-            if (UsarMocks())
-            {
-                var pagos = await ObtenerPagosAsync();
-                return pagos.FirstOrDefault(p => p.IdPago == id);
-            }
-
-            return await GetObjectAsync<PagoDto?>($"/api/pagos/{id}", "pago-vacio.json", null);
+            var pagos = await ObtenerPagosAsync();
+            return pagos.FirstOrDefault(p => p.IdPago == id);
         }
 
         public async Task<bool> CrearPagoAsync(PagoDto pago)
@@ -906,4 +932,13 @@ namespace FrontendFacturacion.Services
         public int CantidadDetalleFactura { get; set; }
         public decimal PrecioUnitarioDetalleFactura { get; set; }
     }
+    public class FuenteDatosDto
+    {
+        public string Origen { get; set; } = "";
+        public string NombreApi { get; set; } = "";
+        public string Ambiente { get; set; } = "";
+        public string Mensaje { get; set; } = "";
+        public string FechaRespuesta { get; set; } = "";
+    }
+
 }
