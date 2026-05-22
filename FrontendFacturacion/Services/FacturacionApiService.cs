@@ -229,7 +229,7 @@ namespace FrontendFacturacion.Services
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
 
-                var response = await _httpClient.GetAsync("/api/fuente-datos", cts.Token);
+                var response = await _httpClient.GetAsync("/api/test", cts.Token);
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -243,17 +243,14 @@ namespace FrontendFacturacion.Services
                     };
                 }
 
-                var json = await response.Content.ReadAsStringAsync(cts.Token);
-
-                return JsonSerializer.Deserialize<FuenteDatosDto>(json, _jsonOptions)
-                       ?? new FuenteDatosDto
-                       {
-                           Origen = "DESCONOCIDO",
-                           NombreApi = "Respuesta inválida",
-                           Ambiente = "Error",
-                           Mensaje = "La API respondió, pero el JSON no se pudo interpretar.",
-                           FechaRespuesta = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
-                       };
+                return new FuenteDatosDto
+                {
+                    Origen = "API_DUMMY",
+                    NombreApi = "API Dummy / API externa",
+                    Ambiente = "Pruebas de integración",
+                    Mensaje = "La API respondió correctamente desde /api/test.",
+                    FechaRespuesta = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+                };
             }
             catch
             {
@@ -334,10 +331,10 @@ namespace FrontendFacturacion.Services
             return await GetListAsync<ProductoDto>("/api/productos", "productos.json");
         }
 
-        public async Task<ProductoDto?> ObtenerProductoPorCodigoAsync(string codigo)
+        public async Task<ProductoDto?> ObtenerProductoPorIdAsync(int id)
         {
             var productos = await ObtenerProductosAsync();
-            return productos.FirstOrDefault(p => p.CodigoProducto == codigo);
+            return productos.FirstOrDefault(p => p.IdProducto == id);
         }
 
         public async Task<bool> CrearProductoAsync(ProductoDto producto)
@@ -362,17 +359,18 @@ namespace FrontendFacturacion.Services
             return await PostApiAsync("/api/productos", producto);
         }
 
-        public async Task<bool> ActualizarProductoAsync(string codigo, ProductoDto producto)
+        public async Task<bool> ActualizarProductoAsync(int id, ProductoDto producto)
         {
             if (UsarMocks())
             {
                 var productos = await ObtenerProductosAsync();
                 var categorias = await ObtenerCategoriasAsync();
-                var actual = productos.FirstOrDefault(p => p.CodigoProducto == codigo);
+                var actual = productos.FirstOrDefault(p => p.IdProducto == id);
 
                 if (actual == null)
                     return false;
 
+                actual.CodigoProducto = producto.CodigoProducto;
                 actual.IdCategoriaProducto = producto.IdCategoriaProducto;
                 actual.NombreCategoriaProducto = categorias
                     .FirstOrDefault(c => c.IdCategoriaProducto == producto.IdCategoriaProducto)?
@@ -387,20 +385,20 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            return await PutApiAsync($"/api/productos/{codigo}", producto);
+            return await PutApiAsync($"/api/productos/{id}", producto);
         }
 
-        public async Task<bool> EliminarProductoAsync(string codigo)
+        public async Task<bool> EliminarProductoAsync(int id)
         {
             if (UsarMocks())
             {
                 var productos = await ObtenerProductosAsync();
-                productos.RemoveAll(p => p.CodigoProducto == codigo);
+                productos.RemoveAll(p => p.IdProducto == id);
                 await EscribirListaMockAsync("productos.json", productos);
                 return true;
             }
 
-            return await DeleteApiAsync($"/api/productos/{codigo}");
+            return await DeleteApiAsync($"/api/productos/{id}");
         }
 
         public async Task<List<ClienteDto>> ObtenerClientesAsync()
@@ -699,9 +697,17 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            return await PutApiAsync($"/api/facturas/{id}/estado", new { estadoFactura = estado });
+            return await PutApiAsync($"/api/facturas/estado/{id}", new { estadoFactura = estado });
         }
+        public async Task<bool> AnularFacturaAsync(int id)
+        {
+            if (UsarMocks())
+            {
+                return await CambiarEstadoFacturaAsync(id, "ANULADA");
+            }
 
+            return await PutApiAsync($"/api/facturas/anular/{id}", new { });
+        }
         public async Task<bool> EliminarFacturaAsync(int id)
         {
             if (UsarMocks())

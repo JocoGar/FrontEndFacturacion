@@ -57,7 +57,7 @@ namespace FrontendFacturacion.Controllers
         [HttpPost]
         public async Task<IActionResult> Anular(int id)
         {
-            await _api.CambiarEstadoFacturaAsync(id, "ANULADA");
+            await _api.AnularFacturaAsync(id);
             return RedirectToAction("Index");
         }
 
