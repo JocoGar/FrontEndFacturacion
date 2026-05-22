@@ -14,14 +14,24 @@
 </div>
 
 <div class="form-card">
-    <form asp-controller="Clientes" asp-action="Edit" asp-route-id="@Model.DpiCliente" method="post">
+    <form asp-controller="Clientes" asp-action="Edit" asp-route-id="@Model.IdCliente" method="post">
         <div class="form-section">
             <h3>Datos del cliente</h3>
 
             <div class="grid grid-3">
                 <div class="form-group">
+                    <label>ID Cliente</label>
+                    <input asp-for="IdCliente" readonly />
+                </div>
+
+                <div class="form-group">
                     <label>DPI</label>
-                    <input asp-for="DpiCliente" readonly />
+                    <input asp-for="DpiCliente" />
+                </div>
+
+                <div class="form-group">
+                    <label>NIT</label>
+                    <input asp-for="NitCliente" />
                 </div>
 
                 <div class="form-group">

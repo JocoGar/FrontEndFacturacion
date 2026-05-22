@@ -30,7 +30,6 @@
                 <th>ID</th>
                 <th>Nombre de categoría</th>
                 <th>Descripción</th>
-                <th>Fecha de creación</th>
                 <th class="text-right">Acciones</th>
             </tr>
         </thead>
@@ -41,7 +40,6 @@
                     <td>@categoria.IdCategoriaProducto</td>
                     <td>@categoria.NombreCategoriaProducto</td>
                     <td>@categoria.DescripcionCategoriaProducto</td>
-                    <td>@categoria.FechaCreacionCategoriaProducto.ToString("dd/MM/yyyy")</td>
                     <td>
                         <div class="actions">
                             <a asp-controller="Categorias" asp-action="Edit" asp-route-id="@categoria.IdCategoriaProducto" class="action-btn">Editar</a>

@@ -3,22 +3,18 @@
     "idPago": 1,
     "idFacturaPago": 1,
     "numeroFactura": "F-001",
-    "fechaPago": "2026-05-06T11:00:00",
+    "fechaPago": "2026-05-06",
     "montoPago": 150.00,
     "metodoPago": "EFECTIVO",
-    "numeroReferenciaPago": "CAJA-01",
-    "estadoPago": "REGISTRADO",
-    "fechaCreacionPago": "2026-05-06"
+    "numeroReferenciaPago": "CAJA-01"
   },
   {
     "idPago": 2,
     "idFacturaPago": 2,
     "numeroFactura": "F-002",
-    "fechaPago": "2026-05-06T12:00:00",
+    "fechaPago": "2026-05-06",
     "montoPago": 1250.00,
     "metodoPago": "TRANSFERENCIA",
-    "numeroReferenciaPago": "TRX-001",
-    "estadoPago": "PENDIENTE",
-    "fechaCreacionPago": "2026-05-06"
+    "numeroReferenciaPago": "TRX-001"
   }
 ]

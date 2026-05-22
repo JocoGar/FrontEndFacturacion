@@ -47,16 +47,6 @@
                     <input asp-for="PrecioUnitarioProducto" type="number" step="0.01" min="0" placeholder="0.00" required />
                 </div>
 
-                <div class="form-group">
-                    <label>Precio costo</label>
-                    <input asp-for="PrecioCostoProducto" type="number" step="0.01" min="0" placeholder="0.00" required />
-                </div>
-
-                <div class="form-group">
-                    <label>Fecha de creación</label>
-                    <input asp-for="FechaCreacionProducto" type="date" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
-                </div>
-
                 <div class="form-group" style="grid-column: 1 / -1;">
                     <label>Descripción</label>
                     <textarea asp-for="DescripcionProducto" placeholder="Descripción del producto o servicio"></textarea>

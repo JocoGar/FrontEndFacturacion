@@ -1,40 +1,37 @@
 {
   "factura": {
     "idFactura": 1,
-    "dpiClienteFactura": "2548963210101",
+    "idClienteFactura": 1,
+    "dpiCliente": "2548963210101",
+    "nitCliente": "1234567-8",
     "nombreCliente": "Juan Carlos",
     "apellidoCliente": "Pérez Gómez",
     "dpiUsuarioFactura": "2948302910101",
     "nombreUsuario": "Carlos Arturo",
     "apellidoUsuario": "Méndez López",
     "numeroFactura": "F-001",
-    "fechaEmisionFactura": "2026-05-06T10:30:00",
-    "fechaVencimientoFactura": "2026-05-20",
-    "estadoFactura": "PAGADA",
+    "fechaEmisionFactura": "2026-05-06",
     "subtotalFactura": 150.00,
     "totalFactura": 150.00,
-    "monedaFactura": "GTQ",
-    "fechaCreacionFactura": "2026-05-06",
-    "fechaActualizacionFactura": "2026-05-06"
+    "monedaFactura": "GTQ"
   },
   "cliente": {
+    "idCliente": 1,
     "dpiCliente": "2548963210101",
+    "nitCliente": "1234567-8",
     "nombreCliente": "Juan Carlos",
     "apellidoCliente": "Pérez Gómez",
     "correoCliente": "jperez@empresa.com",
-    "telefonoCliente": "5555-1234",
-    "fechaCreacionCliente": "2026-05-01",
-    "fechaActualizacionCliente": "2026-05-06"
+    "telefonoCliente": "5555-1234"
   },
   "usuario": {
     "dpiUsuario": "2948302910101",
     "nombreUsuario": "Carlos Arturo",
     "apellidoUsuario": "Méndez López",
     "correoUsuario": "carlos@empresa.com",
+    "passwordUsuario": "123456",
     "idRol": 1,
-    "nombreRol": "Administrador",
-    "fechaCreacionUsuario": "2026-05-01",
-    "fechaActualizacionUsuario": "2026-05-06"
+    "nombreRol": "Administrador"
   },
   "detalles": [
     {
@@ -42,7 +39,7 @@
       "idFacturaDetalleFactura": 1,
       "codigoProductoDetalleFactura": "SRV-001",
       "nombreProducto": "Servicio de soporte técnico",
-      "cantidadDetalleFactura": 1,
+      "cantidadDetalleFactura": 1.00,
       "precioUnitarioDetalleFactura": 150.00
     }
   ],
@@ -51,12 +48,10 @@
       "idPago": 1,
       "idFacturaPago": 1,
       "numeroFactura": "F-001",
-      "fechaPago": "2026-05-06T11:00:00",
+      "fechaPago": "2026-05-06",
       "montoPago": 150.00,
       "metodoPago": "EFECTIVO",
-      "numeroReferenciaPago": "CAJA-01",
-      "estadoPago": "REGISTRADO",
-      "fechaCreacionPago": "2026-05-06"
+      "numeroReferenciaPago": "CAJA-01"
     }
   ]
 }

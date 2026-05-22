@@ -32,7 +32,6 @@
                 <th>Apellido</th>
                 <th>Correo</th>
                 <th>Rol</th>
-                <th>Fecha creación</th>
                 <th class="text-right">Acciones</th>
             </tr>
         </thead>
@@ -45,7 +44,6 @@
                     <td>@usuario.ApellidoUsuario</td>
                     <td>@usuario.CorreoUsuario</td>
                     <td><span class="badge badge-blue">@usuario.NombreRol</span></td>
-                    <td>@usuario.FechaCreacionUsuario.ToString("dd/MM/yyyy")</td>
                     <td>
                         <div class="actions">
                             <a asp-controller="Usuarios" asp-action="Edit" asp-route-id="@usuario.DpiUsuario" class="action-btn">Editar</a>

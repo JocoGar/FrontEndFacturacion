@@ -4,9 +4,6 @@
     ViewData["Title"] = "Facturas";
 
     var totalEmitido = Model.Sum(f => f.TotalFactura);
-    var totalPendiente = Model.Where(f => f.EstadoFactura == "PENDIENTE" || f.EstadoFactura == "VENCIDA").Sum(f => f.TotalFactura);
-    var vencidas = Model.Count(f => f.EstadoFactura == "VENCIDA");
-    var pagadas = Model.Where(f => f.EstadoFactura == "PAGADA").Sum(f => f.TotalFactura);
 }
 
 <div class="page-title">
@@ -18,7 +15,7 @@
     <a asp-controller="Facturas" asp-action="Create" class="btn btn-primary">Nueva factura</a>
 </div>
 
-<div class="grid grid-4">
+<div class="grid grid-3">
     <div class="card">
         <div class="stat-title">Total emitido</div>
         <div class="stat-number">Q@(totalEmitido.ToString("N2"))</div>
@@ -26,21 +23,15 @@
     </div>
 
     <div class="card">
-        <div class="stat-title">Pendiente de cobro</div>
-        <div class="stat-number">Q@(totalPendiente.ToString("N2"))</div>
-        <div class="stat-note">Pendientes y vencidas</div>
+        <div class="stat-title">Cantidad de facturas</div>
+        <div class="stat-number">@Model.Count</div>
+        <div class="stat-note">Registros en sistema</div>
     </div>
 
     <div class="card">
-        <div class="stat-title">Facturas vencidas</div>
-        <div class="stat-number">@vencidas</div>
-        <div class="stat-note">Requiere seguimiento</div>
-    </div>
-
-    <div class="card">
-        <div class="stat-title">Total pagado</div>
-        <div class="stat-number">Q@(pagadas.ToString("N2"))</div>
-        <div class="stat-note">Facturas pagadas</div>
+        <div class="stat-title">Moneda principal</div>
+        <div class="stat-number">GTQ</div>
+        <div class="stat-note">Sistema de facturación</div>
     </div>
 </div>
 
@@ -51,7 +42,7 @@
         <h3>Listado de facturas</h3>
 
         <form method="get" class="search-form">
-            <input type="text" name="buscar" value="@ViewBag.Buscar" placeholder="Buscar por factura, cliente, usuario o estado..." />
+            <input type="text" name="buscar" value="@ViewBag.Buscar" placeholder="Buscar por factura, cliente, NIT o usuario..." />
             <button class="btn btn-outline" type="submit">Buscar</button>
             <a asp-action="Index" class="btn btn-outline">Limpiar</a>
         </form>
@@ -60,11 +51,12 @@
     <table>
         <thead>
             <tr>
+                <th>ID</th>
                 <th>Número factura</th>
                 <th>Cliente</th>
+                <th>NIT</th>
                 <th>Usuario</th>
                 <th>Fecha emisión</th>
-                <th>Estado</th>
                 <th class="text-right">Subtotal</th>
                 <th class="text-right">Total</th>
                 <th class="text-right">Acciones</th>
@@ -74,36 +66,19 @@
             @foreach (var factura in Model)
             {
                 <tr>
+                    <td>@factura.IdFactura</td>
                     <td>@factura.NumeroFactura</td>
                     <td>@factura.Cliente</td>
+                    <td>@factura.NitCliente</td>
                     <td>@factura.Usuario</td>
                     <td>@factura.FechaEmisionFactura.ToString("dd/MM/yyyy")</td>
-                    <td>
-                        <span class="badge @(factura.EstadoFactura == "PAGADA" ? "badge-green" : factura.EstadoFactura == "VENCIDA" ? "badge-red" : "badge-yellow")">
-                            @factura.EstadoFactura
-                        </span>
-                    </td>
                     <td class="text-right">Q@(factura.SubtotalFactura.ToString("N2"))</td>
                     <td class="text-right">Q@(factura.TotalFactura.ToString("N2"))</td>
                     <td>
                         <div class="actions">
                             <a asp-controller="Facturas" asp-action="Details" asp-route-id="@factura.IdFactura" class="action-btn">Ver</a>
 
-                            @if (factura.EstadoFactura != "PAGADA")
-                            {
-                                <a asp-controller="Pagos" asp-action="Create" asp-route-idFactura="@factura.IdFactura" class="action-btn">Registrar pago</a>
-
-                                <form asp-controller="Facturas" asp-action="MarcarPagada" asp-route-id="@factura.IdFactura" method="post" class="inline-form">
-                                    <button class="action-btn" type="submit">Marcar pagada</button>
-                                </form>
-                            }
-
-                            @if (factura.EstadoFactura != "ANULADA")
-                            {
-                                <form asp-controller="Facturas" asp-action="Anular" asp-route-id="@factura.IdFactura" method="post" class="inline-form">
-                                    <button class="action-btn" type="submit" onclick="return confirm('¿Anular factura?')">Anular</button>
-                                </form>
-                            }
+                            <a asp-controller="Pagos" asp-action="Create" asp-route-idFactura="@factura.IdFactura" class="action-btn">Registrar pago</a>
 
                             <form asp-controller="Facturas" asp-action="Delete" asp-route-id="@factura.IdFactura" method="post" class="inline-form">
                                 <button class="action-btn" type="submit" onclick="return confirm('¿Eliminar factura?')">Eliminar</button>

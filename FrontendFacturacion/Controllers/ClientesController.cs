@@ -20,7 +20,9 @@ namespace FrontendFacturacion.Controllers
             {
                 clientes = clientes
                     .Where(c =>
+                        c.IdCliente.ToString().Contains(buscar) ||
                         c.DpiCliente.Contains(buscar, StringComparison.OrdinalIgnoreCase) ||
+                        c.NitCliente.Contains(buscar, StringComparison.OrdinalIgnoreCase) ||
                         c.NombreCliente.Contains(buscar, StringComparison.OrdinalIgnoreCase) ||
                         c.ApellidoCliente.Contains(buscar, StringComparison.OrdinalIgnoreCase) ||
                         c.CorreoCliente.Contains(buscar, StringComparison.OrdinalIgnoreCase) ||
@@ -44,9 +46,9 @@ namespace FrontendFacturacion.Controllers
             return RedirectToAction("Index");
         }
 
-        public async Task<IActionResult> Edit(string id)
+        public async Task<IActionResult> Edit(int id)
         {
-            var cliente = await _api.ObtenerClientePorDpiAsync(id);
+            var cliente = await _api.ObtenerClientePorIdAsync(id);
 
             if (cliente == null)
                 return RedirectToAction("Index");
@@ -55,14 +57,14 @@ namespace FrontendFacturacion.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Edit(string id, ClienteDto cliente)
+        public async Task<IActionResult> Edit(int id, ClienteDto cliente)
         {
             await _api.ActualizarClienteAsync(id, cliente);
             return RedirectToAction("Index");
         }
 
         [HttpPost]
-        public async Task<IActionResult> Delete(string id)
+        public async Task<IActionResult> Delete(int id)
         {
             await _api.EliminarClienteAsync(id);
             return RedirectToAction("Index");

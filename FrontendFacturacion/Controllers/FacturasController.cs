@@ -24,7 +24,7 @@ namespace FrontendFacturacion.Controllers
                         f.NumeroFactura.Contains(buscar, StringComparison.OrdinalIgnoreCase) ||
                         f.Cliente.Contains(buscar, StringComparison.OrdinalIgnoreCase) ||
                         f.Usuario.Contains(buscar, StringComparison.OrdinalIgnoreCase) ||
-                        f.EstadoFactura.Contains(buscar, StringComparison.OrdinalIgnoreCase))
+                        f.NitCliente.Contains(buscar, StringComparison.OrdinalIgnoreCase))
                     .ToList();
             }
 
@@ -48,24 +48,10 @@ namespace FrontendFacturacion.Controllers
             return RedirectToAction("Index");
         }
 
-        public async Task<IActionResult> Details(int id = 1)
+        public async Task<IActionResult> Details(int id)
         {
             var detalle = await _api.ObtenerDetalleFacturaAsync(id);
             return View(detalle);
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> Anular(int id)
-        {
-            await _api.AnularFacturaAsync(id);
-            return RedirectToAction("Index");
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> MarcarPagada(int id)
-        {
-            await _api.CambiarEstadoFacturaAsync(id, "PAGADA");
-            return RedirectToAction("Index");
         }
 
         [HttpPost]

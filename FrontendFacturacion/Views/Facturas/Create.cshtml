@@ -26,11 +26,11 @@
             <div class="grid grid-3">
                 <div class="form-group">
                     <label>Cliente</label>
-                    <select asp-for="DpiClienteFactura" required>
+                    <select asp-for="IdClienteFactura" required>
                         <option value="">Seleccione un cliente</option>
                         @foreach (var cliente in clientes)
                         {
-                            <option value="@cliente.DpiCliente">@cliente.NombreCliente @cliente.ApellidoCliente</option>
+                            <option value="@cliente.IdCliente">@cliente.IdCliente - @cliente.NombreCliente @cliente.ApellidoCliente - NIT: @cliente.NitCliente</option>
                         }
                     </select>
                 </div>
@@ -61,20 +61,7 @@
 
                 <div class="form-group">
                     <label>Fecha de emisión</label>
-                    <input asp-for="FechaEmisionFactura" type="datetime-local" value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" required />
-                </div>
-
-                <div class="form-group">
-                    <label>Fecha de vencimiento</label>
-                    <input asp-for="FechaVencimientoFactura" type="date" />
-                </div>
-
-                <div class="form-group">
-                    <label>Estado</label>
-                    <select asp-for="EstadoFactura">
-                        <option>PENDIENTE</option>
-                        <option>PAGADA</option>
-                    </select>
+                    <input asp-for="FechaEmisionFactura" type="date" value="@DateTime.Now.ToString("yyyy-MM-dd")" required />
                 </div>
             </div>
         </div>
@@ -103,7 +90,7 @@
                             </select>
                         </td>
                         <td class="text-center">
-                            <input name="Detalles[0].CantidadDetalleFactura" type="number" value="1" min="1" required />
+                            <input name="Detalles[0].CantidadDetalleFactura" type="number" value="1" min="1" step="0.01" required />
                         </td>
                         <td class="text-right">
                             <input name="Detalles[0].PrecioUnitarioDetalleFactura" type="number" value="150.00" step="0.01" min="0" required />
@@ -141,12 +128,12 @@
                         <option value="">Seleccione</option>
                         @foreach (var producto in productos)
                         {
-                                <option value="@producto.CodigoProducto">@producto.CodigoProducto - @producto.NombreProducto</option>
+                                    <option value="@producto.CodigoProducto">@producto.CodigoProducto - @producto.NombreProducto</option>
                         }
                     </select>
                 </td>
                 <td class="text-center">
-                    <input name="Detalles[${indiceDetalle}].CantidadDetalleFactura" type="number" value="1" min="1" required />
+                    <input name="Detalles[${indiceDetalle}].CantidadDetalleFactura" type="number" value="1" min="1" step="0.01" required />
                 </td>
                 <td class="text-right">
                     <input name="Detalles[${indiceDetalle}].PrecioUnitarioDetalleFactura" type="number" value="150.00" step="0.01" min="0" required />

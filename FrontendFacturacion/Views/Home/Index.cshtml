@@ -20,7 +20,7 @@
     }
 </div>
 
-<div class="grid grid-5">
+<div class="grid grid-4">
     <div class="card">
         <div class="stat-title">Productos/Servicios</div>
         <div class="stat-number">@Model.TotalProductos</div>
@@ -30,19 +30,13 @@
     <div class="card">
         <div class="stat-title">Clientes</div>
         <div class="stat-number">@Model.TotalClientes</div>
-        <div class="stat-note">Activos</div>
+        <div class="stat-note">Registrados</div>
     </div>
 
     <div class="card">
         <div class="stat-title">Facturas emitidas</div>
         <div class="stat-number">@Model.TotalFacturas</div>
         <div class="stat-note">Registradas</div>
-    </div>
-
-    <div class="card">
-        <div class="stat-title">Facturas pendientes</div>
-        <div class="stat-number">@Model.FacturasPendientes</div>
-        <div class="stat-note">Requieren pago</div>
     </div>
 
     <div class="card">
@@ -65,9 +59,9 @@
             <tr>
                 <th>No. Factura</th>
                 <th>Cliente</th>
+                <th>NIT</th>
                 <th>Fecha</th>
                 <th class="text-right">Total</th>
-                <th>Estado</th>
             </tr>
         </thead>
         <tbody>
@@ -76,13 +70,9 @@
                 <tr>
                     <td>@factura.NumeroFactura</td>
                     <td>@factura.Cliente</td>
+                    <td>@factura.NitCliente</td>
                     <td>@factura.FechaEmisionFactura.ToString("dd/MM/yyyy")</td>
                     <td class="text-right">Q@(factura.TotalFactura.ToString("N2"))</td>
-                    <td>
-                        <span class="badge @(factura.EstadoFactura == "PAGADA" ? "badge-green" : factura.EstadoFactura == "VENCIDA" ? "badge-red" : "badge-yellow")">
-                            @factura.EstadoFactura
-                        </span>
-                    </td>
                 </tr>
             }
         </tbody>

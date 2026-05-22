@@ -14,11 +14,16 @@
 </div>
 
 <div class="form-card">
-    <form asp-action="Edit" asp-route-id="@Model.IdCategoriaProducto" method="post">
+    <form asp-controller="Categorias" asp-action="Edit" asp-route-id="@Model.IdCategoriaProducto" method="post">
         <div class="form-section">
             <h3>Datos de la categoría</h3>
 
             <div class="grid grid-2">
+                <div class="form-group">
+                    <label>ID</label>
+                    <input asp-for="IdCategoriaProducto" readonly />
+                </div>
+
                 <div class="form-group">
                     <label>Nombre de categoría</label>
                     <input asp-for="NombreCategoriaProducto" />

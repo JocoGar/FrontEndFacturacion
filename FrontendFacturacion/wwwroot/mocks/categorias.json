@@ -2,22 +2,16 @@
   {
     "idCategoriaProducto": 1,
     "nombreCategoriaProducto": "Servicios IT",
-    "descripcionCategoriaProducto": "Soporte técnico, mantenimiento y consultoría.",
-    "fechaCreacionCategoriaProducto": "2026-05-01",
-    "fechaActualizacionCategoriaProducto": "2026-05-06"
+    "descripcionCategoriaProducto": "Soporte técnico, mantenimiento y consultoría."
   },
   {
     "idCategoriaProducto": 2,
     "nombreCategoriaProducto": "Software",
-    "descripcionCategoriaProducto": "Licencias, programas y suscripciones.",
-    "fechaCreacionCategoriaProducto": "2026-05-01",
-    "fechaActualizacionCategoriaProducto": "2026-05-06"
+    "descripcionCategoriaProducto": "Licencias, programas y suscripciones."
   },
   {
     "idCategoriaProducto": 3,
     "nombreCategoriaProducto": "Implementación",
-    "descripcionCategoriaProducto": "Instalación, configuración y capacitación de sistemas.",
-    "fechaCreacionCategoriaProducto": "2026-05-02",
-    "fechaActualizacionCategoriaProducto": "2026-05-06"
+    "descripcionCategoriaProducto": "Instalación, configuración y capacitación de sistemas."
   }
 ]

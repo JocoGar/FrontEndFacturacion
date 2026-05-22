@@ -4,7 +4,6 @@
     ViewData["Title"] = "Pagos";
 
     var totalPagos = Model.Sum(p => p.MontoPago);
-    var pendientes = Model.Count(p => p.EstadoPago == "PENDIENTE");
 }
 
 <div class="page-title">
@@ -16,17 +15,11 @@
     <a asp-controller="Pagos" asp-action="Create" class="btn btn-primary">Registrar pago</a>
 </div>
 
-<div class="grid grid-3">
+<div class="grid grid-2">
     <div class="card">
         <div class="stat-title">Total pagos</div>
         <div class="stat-number">Q@(totalPagos.ToString("N2"))</div>
         <div class="stat-note">Registrados</div>
-    </div>
-
-    <div class="card">
-        <div class="stat-title">Pagos pendientes</div>
-        <div class="stat-number">@pendientes</div>
-        <div class="stat-note">Por confirmar</div>
     </div>
 
     <div class="card">
@@ -43,7 +36,7 @@
         <h3>Últimos pagos registrados</h3>
 
         <form method="get" class="search-form">
-            <input type="text" name="buscar" value="@ViewBag.Buscar" placeholder="Buscar por factura, método, referencia o estado..." />
+            <input type="text" name="buscar" value="@ViewBag.Buscar" placeholder="Buscar por factura, método o referencia..." />
             <button class="btn btn-outline" type="submit">Buscar</button>
             <a asp-action="Index" class="btn btn-outline">Limpiar</a>
         </form>
@@ -52,29 +45,25 @@
     <table>
         <thead>
             <tr>
+                <th>ID</th>
                 <th>Factura</th>
                 <th>Fecha de pago</th>
                 <th class="text-right">Monto</th>
                 <th>Método</th>
                 <th>Referencia</th>
-                <th>Estado</th>
-            <th class="text-right">Acciones</th>
+                <th class="text-right">Acciones</th>
             </tr>
         </thead>
         <tbody>
             @foreach (var pago in Model)
             {
                 <tr>
+                    <td>@pago.IdPago</td>
                     <td>@pago.NumeroFactura</td>
                     <td>@pago.FechaPago.ToString("dd/MM/yyyy")</td>
                     <td class="text-right">Q@(pago.MontoPago.ToString("N2"))</td>
                     <td>@pago.MetodoPago</td>
                     <td>@pago.NumeroReferenciaPago</td>
-                    <td>
-                        <span class="badge @(pago.EstadoPago == "REGISTRADO" ? "badge-green" : pago.EstadoPago == "ANULADO" ? "badge-red" : "badge-yellow")">
-                            @pago.EstadoPago
-                        </span>
-                    </td>
                     <td>
                         <div class="actions">
                             <a asp-controller="Pagos" asp-action="Edit" asp-route-id="@pago.IdPago" class="action-btn">Editar</a>

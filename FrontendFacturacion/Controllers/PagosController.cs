@@ -21,10 +21,10 @@ namespace FrontendFacturacion.Controllers
                 pagos = pagos
                     .Where(p =>
                         p.IdPago.ToString().Contains(buscar) ||
+                        p.IdFacturaPago.ToString().Contains(buscar) ||
                         p.NumeroFactura.Contains(buscar, StringComparison.OrdinalIgnoreCase) ||
                         p.MetodoPago.Contains(buscar, StringComparison.OrdinalIgnoreCase) ||
-                        p.NumeroReferenciaPago.Contains(buscar, StringComparison.OrdinalIgnoreCase) ||
-                        p.EstadoPago.Contains(buscar, StringComparison.OrdinalIgnoreCase))
+                        p.NumeroReferenciaPago.Contains(buscar, StringComparison.OrdinalIgnoreCase))
                     .ToList();
             }
 

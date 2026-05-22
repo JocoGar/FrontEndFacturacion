@@ -1,29 +1,29 @@
 [
   {
+    "idCliente": 1,
     "dpiCliente": "2548963210101",
+    "nitCliente": "1234567-8",
     "nombreCliente": "Juan Carlos",
     "apellidoCliente": "Pérez Gómez",
     "correoCliente": "jperez@empresa.com",
-    "telefonoCliente": "5555-1234",
-    "fechaCreacionCliente": "2026-05-01",
-    "fechaActualizacionCliente": "2026-05-06"
+    "telefonoCliente": "5555-1234"
   },
   {
+    "idCliente": 2,
     "dpiCliente": "1874521470101",
+    "nitCliente": "8765432-1",
     "nombreCliente": "María Fernanda",
     "apellidoCliente": "López Ruiz",
     "correoCliente": "mlopez@empresa.com",
-    "telefonoCliente": "4444-9876",
-    "fechaCreacionCliente": "2026-05-02",
-    "fechaActualizacionCliente": "2026-05-06"
+    "telefonoCliente": "4444-9876"
   },
   {
+    "idCliente": 3,
     "dpiCliente": "3210654870301",
+    "nitCliente": "4567890-2",
     "nombreCliente": "Roberto Antonio",
     "apellidoCliente": "García Méndez",
     "correoCliente": "roberto@empresa.com",
-    "telefonoCliente": "3333-5678",
-    "fechaCreacionCliente": "2026-05-03",
-    "fechaActualizacionCliente": "2026-05-06"
+    "telefonoCliente": "3333-5678"
   }
 ]

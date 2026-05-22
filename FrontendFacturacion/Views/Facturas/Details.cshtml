@@ -18,7 +18,9 @@
         <div>
             <h3>Cliente</h3>
             <p><strong>@Model.Cliente.NombreCliente @Model.Cliente.ApellidoCliente</strong></p>
+            <p>ID Cliente: @Model.Cliente.IdCliente</p>
             <p>DPI: @Model.Cliente.DpiCliente</p>
+            <p>NIT: @Model.Cliente.NitCliente</p>
             <p>Correo: @Model.Cliente.CorreoCliente</p>
             <p>Teléfono: @Model.Cliente.TelefonoCliente</p>
         </div>
@@ -28,12 +30,7 @@
             <p><strong>@Model.Usuario.NombreUsuario @Model.Usuario.ApellidoUsuario</strong></p>
             <p>Usuario DPI: @Model.Usuario.DpiUsuario</p>
             <p>Fecha emisión: @Model.Factura.FechaEmisionFactura.ToString("dd/MM/yyyy")</p>
-            <p>
-                Estado:
-                <span class="badge @(Model.Factura.EstadoFactura == "PAGADA" ? "badge-green" : Model.Factura.EstadoFactura == "VENCIDA" ? "badge-red" : "badge-yellow")">
-                    @Model.Factura.EstadoFactura
-                </span>
-            </p>
+            <p>Moneda: @Model.Factura.MonedaFactura</p>
         </div>
     </div>
 </div>
@@ -61,7 +58,7 @@
                 <tr>
                     <td>@detalle.CodigoProductoDetalleFactura</td>
                     <td>@detalle.NombreProducto</td>
-                    <td class="text-center">@detalle.CantidadDetalleFactura</td>
+                    <td class="text-center">@detalle.CantidadDetalleFactura.ToString("N2")</td>
                     <td class="text-right">Q@(detalle.PrecioUnitarioDetalleFactura.ToString("N2"))</td>
                     <td class="text-right">Q@(detalle.Subtotal.ToString("N2"))</td>
                 </tr>
@@ -90,7 +87,6 @@
                 <th>Método</th>
                 <th>Referencia</th>
                 <th class="text-right">Monto</th>
-                <th>Estado</th>
             </tr>
         </thead>
         <tbody>
@@ -101,11 +97,6 @@
                     <td>@pago.MetodoPago</td>
                     <td>@pago.NumeroReferenciaPago</td>
                     <td class="text-right">Q@(pago.MontoPago.ToString("N2"))</td>
-                    <td>
-                        <span class="badge @(pago.EstadoPago == "REGISTRADO" ? "badge-green" : pago.EstadoPago == "ANULADO" ? "badge-red" : "badge-yellow")">
-                            @pago.EstadoPago
-                        </span>
-                    </td>
                 </tr>
             }
         </tbody>

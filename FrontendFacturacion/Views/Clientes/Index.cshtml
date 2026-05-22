@@ -18,7 +18,7 @@
         <h3>Listado de clientes</h3>
 
         <form method="get" class="search-form">
-            <input type="text" name="buscar" value="@ViewBag.Buscar" placeholder="Buscar por DPI, nombre o correo..." />
+            <input type="text" name="buscar" value="@ViewBag.Buscar" placeholder="Buscar por ID, DPI, NIT, nombre o correo..." />
             <button class="btn btn-outline" type="submit">Buscar</button>
             <a asp-action="Index" class="btn btn-outline">Limpiar</a>
         </form>
@@ -27,12 +27,13 @@
     <table>
         <thead>
             <tr>
+                <th>ID</th>
                 <th>DPI</th>
+                <th>NIT</th>
                 <th>Nombre</th>
                 <th>Apellido</th>
                 <th>Correo</th>
                 <th>Teléfono</th>
-                <th>Fecha creación</th>
                 <th class="text-right">Acciones</th>
             </tr>
         </thead>
@@ -40,17 +41,18 @@
             @foreach (var cliente in Model)
             {
                 <tr>
+                    <td>@cliente.IdCliente</td>
                     <td>@cliente.DpiCliente</td>
+                    <td>@cliente.NitCliente</td>
                     <td>@cliente.NombreCliente</td>
                     <td>@cliente.ApellidoCliente</td>
                     <td>@cliente.CorreoCliente</td>
                     <td>@cliente.TelefonoCliente</td>
-                    <td>@cliente.FechaCreacionCliente.ToString("dd/MM/yyyy")</td>
                     <td>
                         <div class="actions">
-                            <a asp-controller="Clientes" asp-action="Edit" asp-route-id="@cliente.DpiCliente" class="action-btn">Editar</a>
+                            <a asp-controller="Clientes" asp-action="Edit" asp-route-id="@cliente.IdCliente" class="action-btn">Editar</a>
 
-                            <form asp-controller="Clientes" asp-action="Delete" asp-route-id="@cliente.DpiCliente" method="post" class="inline-form">
+                            <form asp-controller="Clientes" asp-action="Delete" asp-route-id="@cliente.IdCliente" method="post" class="inline-form">
                                 <button class="action-btn" type="submit" onclick="return confirm('¿Eliminar cliente?')">Eliminar</button>
                             </form>
                         </div>

@@ -26,7 +26,7 @@ namespace FrontendFacturacion.Controllers
                 TotalProductos = productos.Count,
                 TotalClientes = clientes.Count,
                 TotalFacturas = facturas.Count,
-                FacturasPendientes = facturas.Count(f => f.EstadoFactura == "PENDIENTE"),
+                FacturasPendientes = 0,
                 TotalPagos = pagos.Count,
                 ApiDisponible = fuenteDatos.Origen == "API_DUMMY",
                 UltimasFacturas = facturas.Take(5).ToList()
