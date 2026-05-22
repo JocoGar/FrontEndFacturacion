@@ -50,9 +50,9 @@
                     <td class="text-right">Q@(producto.PrecioCostoProducto.ToString("N2"))</td>
                     <td>
                         <div class="actions">
-                            <a asp-controller="Productos" asp-action="Edit" asp-route-id="@producto.CodigoProducto" class="action-btn">Editar</a>
+                            <a asp-controller="Productos" asp-action="Edit" asp-route-id="@producto.IdProducto" class="action-btn">Editar</a>
 
-                            <form asp-controller="Productos" asp-action="Delete" asp-route-id="@producto.CodigoProducto" method="post" class="inline-form">
+                            <form asp-controller="Productos" asp-action="Delete" asp-route-id="@producto.IdProducto" method="post" class="inline-form">
                                 <button class="action-btn" type="submit" onclick="return confirm('¿Eliminar producto/servicio?')">Eliminar</button>
                             </form>
                         </div>

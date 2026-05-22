@@ -45,11 +45,11 @@ namespace FrontendFacturacion.Controllers
             return RedirectToAction("Index");
         }
 
-        public async Task<IActionResult> Edit(string id)
+        public async Task<IActionResult> Edit(int id)
         {
             ViewBag.Categorias = await _api.ObtenerCategoriasAsync();
 
-            var producto = await _api.ObtenerProductoPorCodigoAsync(id);
+            var producto = await _api.ObtenerProductoPorIdAsync(id);
 
             if (producto == null)
                 return RedirectToAction("Index");
@@ -58,14 +58,14 @@ namespace FrontendFacturacion.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> Edit(string id, ProductoDto producto)
+        public async Task<IActionResult> Edit(int id, ProductoDto producto)
         {
             await _api.ActualizarProductoAsync(id, producto);
             return RedirectToAction("Index");
         }
 
         [HttpPost]
-        public async Task<IActionResult> Delete(string id)
+        public async Task<IActionResult> Delete(int id)
         {
             await _api.EliminarProductoAsync(id);
             return RedirectToAction("Index");
