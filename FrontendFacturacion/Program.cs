@@ -4,20 +4,19 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 
-builder.Services.AddHttpClient<FacturacionApiService>(client =>
+builder.Services.AddHttpClient<FacturacionApiService>((sp, client) =>
 {
-    var baseUrl = builder.Configuration["ApiSettings:BaseUrl"] ?? "http://localhost:5000";
-    var timeoutSeconds = builder.Configuration.GetValue<int>("ApiSettings:TimeoutSeconds", 5);
-    var token = builder.Configuration["ApiSettings:Token"];
+    var configuration = sp.GetRequiredService<IConfiguration>();
+
+    var baseUrl = configuration["ApiSettings:BaseUrl"] ?? "http://192.168.1.216/api/";
+
+    if (!baseUrl.EndsWith("/"))
+        baseUrl += "/";
 
     client.BaseAddress = new Uri(baseUrl);
-    client.Timeout = TimeSpan.FromSeconds(timeoutSeconds);
 
-    if (!string.IsNullOrWhiteSpace(token))
-    {
-        client.DefaultRequestHeaders.Authorization =
-            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
-    }
+    var timeout = configuration.GetValue<int>("ApiSettings:TimeoutSeconds", 5);
+    client.Timeout = TimeSpan.FromSeconds(timeout + 2);
 });
 
 var app = builder.Build();
@@ -32,8 +31,6 @@ app.UseStaticFiles();
 app.UseRouting();
 
 app.UseAuthorization();
-
-app.MapGet("/healthz", () => Results.Ok("OK"));
 
 app.MapControllerRoute(
     name: "default",

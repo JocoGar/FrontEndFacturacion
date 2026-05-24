@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Json;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace FrontendFacturacion.Services
 {
@@ -8,7 +9,8 @@ namespace FrontendFacturacion.Services
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _configuration;
         private readonly IWebHostEnvironment _environment;
-        private readonly JsonSerializerOptions _jsonOptions;
+        private readonly JsonSerializerOptions _mockJsonOptions;
+        private readonly JsonSerializerOptions _apiJsonOptions;
 
         public FacturacionApiService(
             HttpClient httpClient,
@@ -19,9 +21,16 @@ namespace FrontendFacturacion.Services
             _configuration = configuration;
             _environment = environment;
 
-            _jsonOptions = new JsonSerializerOptions
+            _mockJsonOptions = new JsonSerializerOptions
             {
                 PropertyNameCaseInsensitive = true,
+                WriteIndented = true
+            };
+
+            _apiJsonOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowReadingFromString,
                 WriteIndented = true
             };
         }
@@ -41,6 +50,11 @@ namespace FrontendFacturacion.Services
             return _configuration.GetValue<int>("ApiSettings:TimeoutSeconds", 5);
         }
 
+        private string Endpoint(string endpoint)
+        {
+            return endpoint.TrimStart('/');
+        }
+
         private string RutaMock(string archivo)
         {
             return Path.Combine(_environment.WebRootPath, "mocks", archivo);
@@ -54,7 +68,7 @@ namespace FrontendFacturacion.Services
                 return new List<T>();
 
             var json = await File.ReadAllTextAsync(ruta);
-            return JsonSerializer.Deserialize<List<T>>(json, _jsonOptions) ?? new List<T>();
+            return JsonSerializer.Deserialize<List<T>>(json, _mockJsonOptions) ?? new List<T>();
         }
 
         private async Task EscribirListaMockAsync<T>(string archivo, List<T> datos)
@@ -65,7 +79,7 @@ namespace FrontendFacturacion.Services
             if (!Directory.Exists(carpeta))
                 Directory.CreateDirectory(carpeta!);
 
-            var json = JsonSerializer.Serialize(datos, _jsonOptions);
+            var json = JsonSerializer.Serialize(datos, _mockJsonOptions);
             await File.WriteAllTextAsync(ruta, json);
         }
 
@@ -77,7 +91,7 @@ namespace FrontendFacturacion.Services
                 return valorDefault;
 
             var json = await File.ReadAllTextAsync(ruta);
-            return JsonSerializer.Deserialize<T>(json, _jsonOptions) ?? valorDefault;
+            return JsonSerializer.Deserialize<T>(json, _mockJsonOptions) ?? valorDefault;
         }
 
         private async Task EscribirObjetoMockAsync<T>(string archivo, T datos)
@@ -88,105 +102,93 @@ namespace FrontendFacturacion.Services
             if (!Directory.Exists(carpeta))
                 Directory.CreateDirectory(carpeta!);
 
-            var json = JsonSerializer.Serialize(datos, _jsonOptions);
+            var json = JsonSerializer.Serialize(datos, _mockJsonOptions);
             await File.WriteAllTextAsync(ruta, json);
         }
 
-        private async Task<List<T>> GetListAsync<T>(string endpoint, string mockFile)
+        private async Task<FacturaDetalleViewModel> LeerDetalleFacturaMockAsync(int id)
         {
-            if (UsarMocks())
-                return await LeerListaMockAsync<T>(mockFile);
+            var normal = await LeerObjetoMockAsync(
+                $"factura-detalle-{id}.json",
+                new FacturaDetalleViewModel()
+            );
 
+            if (normal.Factura.IdFactura != 0)
+                return normal;
+
+            return await LeerObjetoMockAsync(
+                $"factrura-detalle-{id}.json",
+                new FacturaDetalleViewModel()
+            );
+        }
+
+        private async Task<List<TRaw>?> GetApiListAsync<TRaw>(string endpoint, string? arrayProperty = null)
+        {
             try
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
-                var response = await _httpClient.GetAsync(endpoint, cts.Token);
+                var response = await _httpClient.GetAsync(Endpoint(endpoint), cts.Token);
 
                 if (!response.IsSuccessStatusCode)
-                {
-                    if (UsarFallbackSiApiFalla())
-                        return await LeerListaMockAsync<T>(mockFile);
-
-                    return new List<T>();
-                }
+                    return null;
 
                 var json = await response.Content.ReadAsStringAsync(cts.Token);
-                return JsonSerializer.Deserialize<List<T>>(json, _jsonOptions) ?? new List<T>();
+
+                if (string.IsNullOrWhiteSpace(json))
+                    return new List<TRaw>();
+
+                using var doc = JsonDocument.Parse(json);
+
+                if (doc.RootElement.ValueKind == JsonValueKind.Array)
+                {
+                    return JsonSerializer.Deserialize<List<TRaw>>(json, _apiJsonOptions) ?? new List<TRaw>();
+                }
+
+                if (!string.IsNullOrWhiteSpace(arrayProperty) &&
+                    doc.RootElement.ValueKind == JsonValueKind.Object &&
+                    doc.RootElement.TryGetProperty(arrayProperty, out var arrayElement) &&
+                    arrayElement.ValueKind == JsonValueKind.Array)
+                {
+                    return JsonSerializer.Deserialize<List<TRaw>>(arrayElement.GetRawText(), _apiJsonOptions) ?? new List<TRaw>();
+                }
+
+                return null;
             }
             catch
             {
-                if (UsarFallbackSiApiFalla())
-                    return await LeerListaMockAsync<T>(mockFile);
-
-                return new List<T>();
+                return null;
             }
         }
 
-        private async Task<T> GetObjectAsync<T>(string endpoint, string mockFile, T valorDefault)
-        {
-            if (UsarMocks())
-                return await LeerObjetoMockAsync(mockFile, valorDefault);
-
-            try
-            {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
-                var response = await _httpClient.GetAsync(endpoint, cts.Token);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    if (UsarFallbackSiApiFalla())
-                        return await LeerObjetoMockAsync(mockFile, valorDefault);
-
-                    return valorDefault;
-                }
-
-                var json = await response.Content.ReadAsStringAsync(cts.Token);
-                return JsonSerializer.Deserialize<T>(json, _jsonOptions) ?? valorDefault;
-            }
-            catch
-            {
-                if (UsarFallbackSiApiFalla())
-                    return await LeerObjetoMockAsync(mockFile, valorDefault);
-
-                return valorDefault;
-            }
-        }
-
-        private async Task<T?> GetApiObjectDirectAsync<T>(string endpoint)
+        private async Task<TRaw?> GetApiObjectAsync<TRaw>(string endpoint, string? objectProperty = null)
         {
             try
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
-                var response = await _httpClient.GetAsync(endpoint, cts.Token);
+                var response = await _httpClient.GetAsync(Endpoint(endpoint), cts.Token);
 
                 if (!response.IsSuccessStatusCode)
                     return default;
 
                 var json = await response.Content.ReadAsStringAsync(cts.Token);
-                return JsonSerializer.Deserialize<T>(json, _jsonOptions);
+
+                if (string.IsNullOrWhiteSpace(json))
+                    return default;
+
+                using var doc = JsonDocument.Parse(json);
+
+                if (!string.IsNullOrWhiteSpace(objectProperty) &&
+                    doc.RootElement.ValueKind == JsonValueKind.Object &&
+                    doc.RootElement.TryGetProperty(objectProperty, out var objectElement))
+                {
+                    return JsonSerializer.Deserialize<TRaw>(objectElement.GetRawText(), _apiJsonOptions);
+                }
+
+                return JsonSerializer.Deserialize<TRaw>(json, _apiJsonOptions);
             }
             catch
             {
                 return default;
-            }
-        }
-
-        private async Task<List<T>> GetApiListDirectAsync<T>(string endpoint)
-        {
-            try
-            {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
-                var response = await _httpClient.GetAsync(endpoint, cts.Token);
-
-                if (!response.IsSuccessStatusCode)
-                    return new List<T>();
-
-                var json = await response.Content.ReadAsStringAsync(cts.Token);
-                return JsonSerializer.Deserialize<List<T>>(json, _jsonOptions) ?? new List<T>();
-            }
-            catch
-            {
-                return new List<T>();
             }
         }
 
@@ -195,7 +197,7 @@ namespace FrontendFacturacion.Services
             try
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
-                var response = await _httpClient.PostAsJsonAsync(endpoint, datos, cts.Token);
+                var response = await _httpClient.PostAsJsonAsync(Endpoint(endpoint), datos, _apiJsonOptions, cts.Token);
                 return response.IsSuccessStatusCode;
             }
             catch
@@ -204,18 +206,30 @@ namespace FrontendFacturacion.Services
             }
         }
 
-        private async Task<TResponse?> PostApiReturnAsync<TRequest, TResponse>(string endpoint, TRequest datos)
+        private async Task<TRaw?> PostApiObjectAsync<TRequest, TRaw>(string endpoint, TRequest datos, string objectProperty)
         {
             try
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
-                var response = await _httpClient.PostAsJsonAsync(endpoint, datos, cts.Token);
+                var response = await _httpClient.PostAsJsonAsync(Endpoint(endpoint), datos, _apiJsonOptions, cts.Token);
 
                 if (!response.IsSuccessStatusCode)
                     return default;
 
                 var json = await response.Content.ReadAsStringAsync(cts.Token);
-                return JsonSerializer.Deserialize<TResponse>(json, _jsonOptions);
+
+                if (string.IsNullOrWhiteSpace(json))
+                    return default;
+
+                using var doc = JsonDocument.Parse(json);
+
+                if (doc.RootElement.ValueKind == JsonValueKind.Object &&
+                    doc.RootElement.TryGetProperty(objectProperty, out var objectElement))
+                {
+                    return JsonSerializer.Deserialize<TRaw>(objectElement.GetRawText(), _apiJsonOptions);
+                }
+
+                return JsonSerializer.Deserialize<TRaw>(json, _apiJsonOptions);
             }
             catch
             {
@@ -228,7 +242,7 @@ namespace FrontendFacturacion.Services
             try
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
-                var response = await _httpClient.PutAsJsonAsync(endpoint, datos, cts.Token);
+                var response = await _httpClient.PutAsJsonAsync(Endpoint(endpoint), datos, _apiJsonOptions, cts.Token);
                 return response.IsSuccessStatusCode;
             }
             catch
@@ -242,7 +256,7 @@ namespace FrontendFacturacion.Services
             try
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
-                var response = await _httpClient.DeleteAsync(endpoint, cts.Token);
+                var response = await _httpClient.DeleteAsync(Endpoint(endpoint), cts.Token);
                 return response.IsSuccessStatusCode;
             }
             catch
@@ -265,48 +279,43 @@ namespace FrontendFacturacion.Services
                 };
             }
 
-            try
+            var health = await GetApiObjectAsync<ApiHealthDto>("health");
+
+            if (health != null && health.Status == "ok")
             {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
-                var response = await _httpClient.GetAsync("/health", cts.Token);
-
-                if (!response.IsSuccessStatusCode)
-                {
-                    return new FuenteDatosDto
-                    {
-                        Origen = "MOCK_JSON",
-                        NombreApi = "Mocks locales",
-                        Ambiente = "Fallback local",
-                        Mensaje = "La API respondió con error. Se usaron mocks locales.",
-                        FechaRespuesta = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
-                    };
-                }
-
                 return new FuenteDatosDto
                 {
                     Origen = "API_DUMMY",
                     NombreApi = "API Cluster / VIP",
                     Ambiente = "Integración con APIs",
-                    Mensaje = "La API respondió correctamente desde /health.",
+                    Mensaje = $"La API respondió correctamente desde /api/health. Hostname API: {health.Hostname}",
                     FechaRespuesta = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
                 };
             }
-            catch
+
+            return new FuenteDatosDto
             {
-                return new FuenteDatosDto
-                {
-                    Origen = "MOCK_JSON",
-                    NombreApi = "Mocks locales",
-                    Ambiente = "Fallback local",
-                    Mensaje = "API no disponible. Se usaron mocks locales.",
-                    FechaRespuesta = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
-                };
-            }
+                Origen = "MOCK_JSON",
+                NombreApi = "Mocks locales",
+                Ambiente = "Fallback local",
+                Mensaje = "API no disponible o health check falló.",
+                FechaRespuesta = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
+            };
         }
 
         public async Task<List<CategoriaDto>> ObtenerCategoriasAsync()
         {
-            return await GetListAsync<CategoriaDto>("/categorias", "categorias.json");
+            if (UsarMocks())
+                return await LeerListaMockAsync<CategoriaDto>("categorias.json");
+
+            var raw = await GetApiListAsync<RawCategoriaDto>("categorias");
+
+            if (raw == null)
+                return UsarFallbackSiApiFalla() ? await LeerListaMockAsync<CategoriaDto>("categorias.json") : new List<CategoriaDto>();
+
+            return raw.Select(MapCategoria)
+          .OrderBy(c => c.IdCategoriaProducto)
+          .ToList();
         }
 
         public async Task<CategoriaDto?> ObtenerCategoriaPorIdAsync(int id)
@@ -317,15 +326,18 @@ namespace FrontendFacturacion.Services
                 return categorias.FirstOrDefault(c => c.IdCategoriaProducto == id);
             }
 
-            var categoria = await GetApiObjectDirectAsync<CategoriaDto>($"/categorias/{id}");
+            var raw = await GetApiObjectAsync<RawCategoriaDto>($"categorias/{id}");
 
-            if (categoria == null && UsarFallbackSiApiFalla())
+            if (raw == null)
             {
+                if (!UsarFallbackSiApiFalla())
+                    return null;
+
                 var categorias = await LeerListaMockAsync<CategoriaDto>("categorias.json");
                 return categorias.FirstOrDefault(c => c.IdCategoriaProducto == id);
             }
 
-            return categoria;
+            return MapCategoria(raw);
         }
 
         public async Task<bool> CrearCategoriaAsync(CategoriaDto categoria)
@@ -339,7 +351,11 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            return await PostApiAsync("/categorias", categoria);
+            return await PostApiAsync("categorias", new
+            {
+                nombre_categoria_producto = categoria.NombreCategoriaProducto,
+                descripcion_categoria_producto = categoria.DescripcionCategoriaProducto
+            });
         }
 
         public async Task<bool> ActualizarCategoriaAsync(int id, CategoriaDto categoria)
@@ -359,7 +375,11 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            return await PutApiAsync($"/categorias/{id}", categoria);
+            return await PutApiAsync($"categorias/{id}", new
+            {
+                nombre_categoria_producto = categoria.NombreCategoriaProducto,
+                descripcion_categoria_producto = categoria.DescripcionCategoriaProducto
+            });
         }
 
         public async Task<bool> EliminarCategoriaAsync(int id)
@@ -372,12 +392,22 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            return await DeleteApiAsync($"/categorias/{id}");
+            return await DeleteApiAsync($"categorias/{id}");
         }
 
         public async Task<List<ProductoDto>> ObtenerProductosAsync()
         {
-            return await GetListAsync<ProductoDto>("/productos", "productos.json");
+            if (UsarMocks())
+                return await LeerListaMockAsync<ProductoDto>("productos.json");
+
+            var raw = await GetApiListAsync<RawProductoDto>("productos");
+
+            if (raw == null)
+                return UsarFallbackSiApiFalla() ? await LeerListaMockAsync<ProductoDto>("productos.json") : new List<ProductoDto>();
+
+            return raw.Select(MapProducto)
+          .OrderBy(p => p.IdProducto)
+          .ToList();
         }
 
         public async Task<ProductoDto?> ObtenerProductoPorIdAsync(int id)
@@ -388,15 +418,18 @@ namespace FrontendFacturacion.Services
                 return productos.FirstOrDefault(p => p.IdProducto == id);
             }
 
-            var producto = await GetApiObjectDirectAsync<ProductoDto>($"/productos/{id}");
+            var raw = await GetApiObjectAsync<RawProductoDto>($"productos/{id}");
 
-            if (producto == null && UsarFallbackSiApiFalla())
+            if (raw == null)
             {
+                if (!UsarFallbackSiApiFalla())
+                    return null;
+
                 var productos = await LeerListaMockAsync<ProductoDto>("productos.json");
                 return productos.FirstOrDefault(p => p.IdProducto == id);
             }
 
-            return producto;
+            return MapProducto(raw);
         }
 
         public async Task<ProductoDto?> ObtenerProductoPorCodigoAsync(string codigo)
@@ -407,15 +440,18 @@ namespace FrontendFacturacion.Services
                 return productos.FirstOrDefault(p => p.CodigoProducto == codigo);
             }
 
-            var producto = await GetApiObjectDirectAsync<ProductoDto>($"/productos/codigo/{codigo}");
+            var raw = await GetApiObjectAsync<RawProductoDto>($"productos/codigo/{codigo}");
 
-            if (producto == null && UsarFallbackSiApiFalla())
+            if (raw == null)
             {
+                if (!UsarFallbackSiApiFalla())
+                    return null;
+
                 var productos = await LeerListaMockAsync<ProductoDto>("productos.json");
                 return productos.FirstOrDefault(p => p.CodigoProducto == codigo);
             }
 
-            return producto;
+            return MapProducto(raw);
         }
 
         public async Task<bool> CrearProductoAsync(ProductoDto producto)
@@ -435,7 +471,14 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            return await PostApiAsync("/productos", producto);
+            return await PostApiAsync("productos", new
+            {
+                codigo_producto = producto.CodigoProducto,
+                id_categoria_producto = producto.IdCategoriaProducto,
+                nombre_producto = producto.NombreProducto,
+                descripcion_producto = producto.DescripcionProducto,
+                precio_unitario_producto = producto.PrecioUnitarioProducto
+            });
         }
 
         public async Task<bool> ActualizarProductoAsync(int id, ProductoDto producto)
@@ -462,7 +505,14 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            return await PutApiAsync($"/productos/{id}", producto);
+            return await PutApiAsync($"productos/{id}", new
+            {
+                codigo_producto = producto.CodigoProducto,
+                id_categoria_producto = producto.IdCategoriaProducto,
+                nombre_producto = producto.NombreProducto,
+                descripcion_producto = producto.DescripcionProducto,
+                precio_unitario_producto = producto.PrecioUnitarioProducto
+            });
         }
 
         public async Task<bool> EliminarProductoAsync(int id)
@@ -475,12 +525,22 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            return await DeleteApiAsync($"/productos/{id}");
+            return await DeleteApiAsync($"productos/{id}");
         }
 
         public async Task<List<ClienteDto>> ObtenerClientesAsync()
         {
-            return await GetListAsync<ClienteDto>("/clientes", "clientes.json");
+            if (UsarMocks())
+                return await LeerListaMockAsync<ClienteDto>("clientes.json");
+
+            var raw = await GetApiListAsync<RawClienteDto>("clientes");
+
+            if (raw == null)
+                return UsarFallbackSiApiFalla() ? await LeerListaMockAsync<ClienteDto>("clientes.json") : new List<ClienteDto>();
+
+            return raw.Select(MapCliente)
+          .OrderBy(c => c.IdCliente)
+          .ToList();
         }
 
         public async Task<ClienteDto?> ObtenerClientePorIdAsync(int id)
@@ -491,15 +551,18 @@ namespace FrontendFacturacion.Services
                 return clientes.FirstOrDefault(c => c.IdCliente == id);
             }
 
-            var cliente = await GetApiObjectDirectAsync<ClienteDto>($"/clientes/{id}");
+            var raw = await GetApiObjectAsync<RawClienteDto>($"clientes/{id}");
 
-            if (cliente == null && UsarFallbackSiApiFalla())
+            if (raw == null)
             {
+                if (!UsarFallbackSiApiFalla())
+                    return null;
+
                 var clientes = await LeerListaMockAsync<ClienteDto>("clientes.json");
                 return clientes.FirstOrDefault(c => c.IdCliente == id);
             }
 
-            return cliente;
+            return MapCliente(raw);
         }
 
         public async Task<ClienteDto?> ObtenerClientePorDpiAsync(string dpi)
@@ -510,15 +573,18 @@ namespace FrontendFacturacion.Services
                 return clientes.FirstOrDefault(c => c.DpiCliente == dpi);
             }
 
-            var cliente = await GetApiObjectDirectAsync<ClienteDto>($"/clientes/dpi/{dpi}");
+            var raw = await GetApiObjectAsync<RawClienteDto>($"clientes/dpi/{dpi}");
 
-            if (cliente == null && UsarFallbackSiApiFalla())
+            if (raw == null)
             {
+                if (!UsarFallbackSiApiFalla())
+                    return null;
+
                 var clientes = await LeerListaMockAsync<ClienteDto>("clientes.json");
                 return clientes.FirstOrDefault(c => c.DpiCliente == dpi);
             }
 
-            return cliente;
+            return MapCliente(raw);
         }
 
         public async Task<bool> CrearClienteAsync(ClienteDto cliente)
@@ -532,7 +598,15 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            return await PostApiAsync("/clientes", cliente);
+            return await PostApiAsync("clientes", new
+            {
+                dpi_cliente = cliente.DpiCliente,
+                nit_cliente = cliente.NitCliente,
+                nombre_cliente = cliente.NombreCliente,
+                apellido_cliente = cliente.ApellidoCliente,
+                correo_cliente = cliente.CorreoCliente,
+                telefono_cliente = cliente.TelefonoCliente
+            });
         }
 
         public async Task<bool> ActualizarClienteAsync(int id, ClienteDto cliente)
@@ -556,7 +630,15 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            return await PutApiAsync($"/clientes/{id}", cliente);
+            return await PutApiAsync($"clientes/{id}", new
+            {
+                dpi_cliente = cliente.DpiCliente,
+                nit_cliente = cliente.NitCliente,
+                nombre_cliente = cliente.NombreCliente,
+                apellido_cliente = cliente.ApellidoCliente,
+                correo_cliente = cliente.CorreoCliente,
+                telefono_cliente = cliente.TelefonoCliente
+            });
         }
 
         public async Task<bool> EliminarClienteAsync(int id)
@@ -569,12 +651,22 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            return await DeleteApiAsync($"/clientes/{id}");
+            return await DeleteApiAsync($"clientes/{id}");
         }
 
         public async Task<List<RolDto>> ObtenerRolesAsync()
         {
-            return await GetListAsync<RolDto>("/roles", "roles.json");
+            if (UsarMocks())
+                return await LeerListaMockAsync<RolDto>("roles.json");
+
+            var raw = await GetApiListAsync<RawRolDto>("roles");
+
+            if (raw == null)
+                return UsarFallbackSiApiFalla() ? await LeerListaMockAsync<RolDto>("roles.json") : new List<RolDto>();
+
+            return raw.Select(MapRol)
+          .OrderBy(r => r.IdRol)
+          .ToList();
         }
 
         public async Task<RolDto?> ObtenerRolPorIdAsync(int id)
@@ -585,15 +677,18 @@ namespace FrontendFacturacion.Services
                 return roles.FirstOrDefault(r => r.IdRol == id);
             }
 
-            var rol = await GetApiObjectDirectAsync<RolDto>($"/roles/{id}");
+            var raw = await GetApiObjectAsync<RawRolDto>($"roles/{id}");
 
-            if (rol == null && UsarFallbackSiApiFalla())
+            if (raw == null)
             {
+                if (!UsarFallbackSiApiFalla())
+                    return null;
+
                 var roles = await LeerListaMockAsync<RolDto>("roles.json");
                 return roles.FirstOrDefault(r => r.IdRol == id);
             }
 
-            return rol;
+            return MapRol(raw);
         }
 
         public async Task<bool> CrearRolAsync(RolDto rol)
@@ -607,7 +702,10 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            return await PostApiAsync("/roles", rol);
+            return await PostApiAsync("roles", new
+            {
+                nombre_rol = rol.NombreRol
+            });
         }
 
         public async Task<bool> ActualizarRolAsync(int id, RolDto rol)
@@ -626,7 +724,10 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            return await PutApiAsync($"/roles/{id}", rol);
+            return await PutApiAsync($"roles/{id}", new
+            {
+                nombre_rol = rol.NombreRol
+            });
         }
 
         public async Task<bool> EliminarRolAsync(int id)
@@ -639,12 +740,22 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            return await DeleteApiAsync($"/roles/{id}");
+            return await DeleteApiAsync($"roles/{id}");
         }
 
         public async Task<List<UsuarioDto>> ObtenerUsuariosAsync()
         {
-            return await GetListAsync<UsuarioDto>("/usuarios", "usuarios.json");
+            if (UsarMocks())
+                return await LeerListaMockAsync<UsuarioDto>("usuarios.json");
+
+            var raw = await GetApiListAsync<RawUsuarioDto>("usuarios");
+
+            if (raw == null)
+                return UsarFallbackSiApiFalla() ? await LeerListaMockAsync<UsuarioDto>("usuarios.json") : new List<UsuarioDto>();
+
+            return raw.Select(MapUsuario)
+          .OrderBy(u => u.DpiUsuario)
+          .ToList();
         }
 
         public async Task<UsuarioDto?> ObtenerUsuarioPorDpiAsync(string dpi)
@@ -655,15 +766,18 @@ namespace FrontendFacturacion.Services
                 return usuarios.FirstOrDefault(u => u.DpiUsuario == dpi);
             }
 
-            var usuario = await GetApiObjectDirectAsync<UsuarioDto>($"/usuarios/{dpi}");
+            var raw = await GetApiObjectAsync<RawUsuarioDto>($"usuarios/{dpi}");
 
-            if (usuario == null && UsarFallbackSiApiFalla())
+            if (raw == null)
             {
+                if (!UsarFallbackSiApiFalla())
+                    return null;
+
                 var usuarios = await LeerListaMockAsync<UsuarioDto>("usuarios.json");
                 return usuarios.FirstOrDefault(u => u.DpiUsuario == dpi);
             }
 
-            return usuario;
+            return MapUsuario(raw);
         }
 
         public async Task<bool> CrearUsuarioAsync(UsuarioDto usuario)
@@ -680,7 +794,15 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            return await PostApiAsync("/usuarios", usuario);
+            return await PostApiAsync("usuarios", new
+            {
+                dpi_usuario = usuario.DpiUsuario,
+                nombre_usuario = usuario.NombreUsuario,
+                apellido_usuario = usuario.ApellidoUsuario,
+                correo_usuario = usuario.CorreoUsuario,
+                password_usuario = usuario.PasswordUsuario,
+                id_rol = usuario.IdRol
+            });
         }
 
         public async Task<bool> ActualizarUsuarioAsync(string dpi, UsuarioDto usuario)
@@ -707,7 +829,18 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            return await PutApiAsync($"/usuarios/{dpi}", usuario);
+            var datos = new Dictionary<string, object?>
+            {
+                ["nombre_usuario"] = usuario.NombreUsuario,
+                ["apellido_usuario"] = usuario.ApellidoUsuario,
+                ["correo_usuario"] = usuario.CorreoUsuario,
+                ["id_rol"] = usuario.IdRol
+            };
+
+            if (!string.IsNullOrWhiteSpace(usuario.PasswordUsuario))
+                datos["password_usuario"] = usuario.PasswordUsuario;
+
+            return await PutApiAsync($"usuarios/{dpi}", datos);
         }
 
         public async Task<bool> EliminarUsuarioAsync(string dpi)
@@ -720,57 +853,50 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            return await DeleteApiAsync($"/usuarios/{dpi}");
+            return await DeleteApiAsync($"usuarios/{dpi}");
         }
 
         public async Task<List<FacturaDto>> ObtenerFacturasAsync()
         {
-            return await GetListAsync<FacturaDto>("/facturas", "facturas.json");
+            if (UsarMocks())
+                return await LeerListaMockAsync<FacturaDto>("facturas.json");
+
+            var raw = await GetApiListAsync<RawFacturaDto>("facturas", "facturas");
+
+            if (raw == null)
+                return UsarFallbackSiApiFalla() ? await LeerListaMockAsync<FacturaDto>("facturas.json") : new List<FacturaDto>();
+
+            return raw.Select(MapFactura)
+          .OrderBy(f => f.IdFactura)
+          .ToList();
         }
 
         public async Task<FacturaDetalleViewModel> ObtenerDetalleFacturaAsync(int id)
         {
             if (UsarMocks())
+                return await LeerDetalleFacturaMockAsync(id);
+
+            var rawFactura = await GetApiObjectAsync<RawFacturaDto>($"facturas/{id}", "factura");
+
+            if (rawFactura == null || rawFactura.IdFactura == 0)
             {
-                return await LeerObjetoMockAsync(
-                    $"factura-detalle-{id}.json",
-                    new FacturaDetalleViewModel()
-                );
+                return UsarFallbackSiApiFalla()
+                    ? await LeerDetalleFacturaMockAsync(id)
+                    : new FacturaDetalleViewModel();
             }
 
-            var factura = await GetApiObjectDirectAsync<FacturaDto>($"/facturas/{id}");
+            var factura = MapFactura(rawFactura);
+            var cliente = rawFactura.Cliente != null
+                ? MapCliente(rawFactura.Cliente)
+                : await ObtenerClientePorIdAsync(factura.IdClienteFactura) ?? new ClienteDto();
 
-            if (factura == null || factura.IdFactura == 0)
-            {
-                if (UsarFallbackSiApiFalla())
-                {
-                    return await LeerObjetoMockAsync(
-                        $"factura-detalle-{id}.json",
-                        new FacturaDetalleViewModel()
-                    );
-                }
+            var usuario = rawFactura.Usuario != null
+                ? MapUsuario(rawFactura.Usuario)
+                : await ObtenerUsuarioPorDpiAsync(factura.DpiUsuarioFactura) ?? new UsuarioDto();
 
-                return new FacturaDetalleViewModel();
-            }
-
-            var cliente = await GetApiObjectDirectAsync<ClienteDto>($"/clientes/{factura.IdClienteFactura}");
-            var usuario = await GetApiObjectDirectAsync<UsuarioDto>($"/usuarios/{factura.DpiUsuarioFactura}");
-            var detalles = await GetApiListDirectAsync<DetalleFacturaDto>($"/detalles-factura/factura/{id}");
-            var pagos = await GetApiListDirectAsync<PagoDto>($"/pagos/factura/{id}");
-
-            if (cliente != null)
-            {
-                factura.DpiCliente = cliente.DpiCliente;
-                factura.NitCliente = cliente.NitCliente;
-                factura.NombreCliente = cliente.NombreCliente;
-                factura.ApellidoCliente = cliente.ApellidoCliente;
-            }
-
-            if (usuario != null)
-            {
-                factura.NombreUsuario = usuario.NombreUsuario;
-                factura.ApellidoUsuario = usuario.ApellidoUsuario;
-            }
+            var detalles = rawFactura.Detalles != null && rawFactura.Detalles.Any()
+                ? rawFactura.Detalles.Select(MapDetalle).ToList()
+                : await ObtenerDetallesPorFacturaAsync(id);
 
             foreach (var detalle in detalles)
             {
@@ -781,16 +907,13 @@ namespace FrontendFacturacion.Services
                 }
             }
 
-            foreach (var pago in pagos)
-            {
-                pago.NumeroFactura = factura.NumeroFactura;
-            }
+            var pagos = await ObtenerPagosPorFacturaAsync(id);
 
             return new FacturaDetalleViewModel
             {
                 Factura = factura,
-                Cliente = cliente ?? new ClienteDto(),
-                Usuario = usuario ?? new UsuarioDto(),
+                Cliente = cliente,
+                Usuario = usuario,
                 Detalles = detalles,
                 Pagos = pagos
             };
@@ -861,38 +984,27 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            var subtotalApi = model.Detalles.Sum(d => d.CantidadDetalleFactura * d.PrecioUnitarioDetalleFactura);
-
-            var facturaApi = new FacturaDto
+            var request = new ApiCrearFacturaRequest
             {
-                IdClienteFactura = model.IdClienteFactura,
-                DpiUsuarioFactura = model.DpiUsuarioFactura,
-                NumeroFactura = model.NumeroFactura,
-                FechaEmisionFactura = model.FechaEmisionFactura,
-                SubtotalFactura = subtotalApi,
-                TotalFactura = subtotalApi,
-                MonedaFactura = model.MonedaFactura
+                IdCliente = model.IdClienteFactura,
+                DpiUsuario = model.DpiUsuarioFactura,
+                Detalles = model.Detalles
+                    .Where(d => !string.IsNullOrWhiteSpace(d.CodigoProductoDetalleFactura) && d.CantidadDetalleFactura > 0)
+                    .Select(d => new ApiCrearFacturaDetalleRequest
+                    {
+                        CodigoProducto = d.CodigoProductoDetalleFactura,
+                        Cantidad = d.CantidadDetalleFactura
+                    })
+                    .ToList()
             };
 
-            var facturaCreada = await PostApiReturnAsync<FacturaDto, FacturaDto>("/facturas", facturaApi);
+            var facturaCreada = await PostApiObjectAsync<ApiCrearFacturaRequest, RawFacturaDto>(
+                "facturas",
+                request,
+                "factura"
+            );
 
-            if (facturaCreada == null || facturaCreada.IdFactura == 0)
-                return false;
-
-            foreach (var detalle in model.Detalles)
-            {
-                var detalleApi = new DetalleFacturaDto
-                {
-                    IdFacturaDetalleFactura = facturaCreada.IdFactura,
-                    CodigoProductoDetalleFactura = detalle.CodigoProductoDetalleFactura,
-                    CantidadDetalleFactura = detalle.CantidadDetalleFactura,
-                    PrecioUnitarioDetalleFactura = detalle.PrecioUnitarioDetalleFactura
-                };
-
-                await PostApiAsync("/detalles-factura", detalleApi);
-            }
-
-            return true;
+            return facturaCreada != null && facturaCreada.IdFactura > 0;
         }
 
         public async Task<bool> ActualizarFacturaAsync(int id, FacturaDto factura)
@@ -917,7 +1029,13 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            return await PutApiAsync($"/facturas/{id}", factura);
+            return await PutApiAsync($"facturas/{id}", new
+            {
+                id_cliente_factura = factura.IdClienteFactura,
+                dpi_usuario_factura = factura.DpiUsuarioFactura,
+                fecha_emision_factura = factura.FechaEmisionFactura.ToString("yyyy-MM-dd"),
+                moneda_factura = factura.MonedaFactura
+            });
         }
 
         public async Task<bool> EliminarFacturaAsync(int id)
@@ -936,63 +1054,99 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            return await DeleteApiAsync($"/facturas/{id}");
+            return await DeleteApiAsync($"facturas/{id}");
         }
 
         public async Task<List<DetalleFacturaDto>> ObtenerDetallesFacturaAsync()
         {
-            return await GetListAsync<DetalleFacturaDto>("/detalles-factura", "detalles-factura.json");
+            if (UsarMocks())
+                return new List<DetalleFacturaDto>();
+
+            var raw = await GetApiListAsync<RawDetalleFacturaDto>("detalles-factura");
+
+            return raw?.Select(MapDetalle).ToList() ?? new List<DetalleFacturaDto>();
         }
 
         public async Task<List<DetalleFacturaDto>> ObtenerDetallesPorFacturaAsync(int idFactura)
         {
             if (UsarMocks())
             {
-                var detalle = await LeerObjetoMockAsync(
-                    $"factura-detalle-{idFactura}.json",
-                    new FacturaDetalleViewModel()
-                );
-
+                var detalle = await LeerDetalleFacturaMockAsync(idFactura);
                 return detalle.Detalles;
             }
 
-            return await GetApiListDirectAsync<DetalleFacturaDto>($"/detalles-factura/factura/{idFactura}");
+            var raw = await GetApiListAsync<RawDetalleFacturaDto>($"detalles-factura/factura/{idFactura}");
+
+            return raw?.Select(MapDetalle).ToList() ?? new List<DetalleFacturaDto>();
         }
 
         public async Task<DetalleFacturaDto?> ObtenerDetalleFacturaLineaPorIdAsync(int id)
         {
-            return await GetApiObjectDirectAsync<DetalleFacturaDto>($"/detalles-factura/{id}");
+            var raw = await GetApiObjectAsync<RawDetalleFacturaDto>($"detalles-factura/{id}");
+            return raw == null ? null : MapDetalle(raw);
         }
 
         public async Task<bool> CrearDetalleFacturaAsync(DetalleFacturaDto detalle)
         {
-            return await PostApiAsync("/detalles-factura", detalle);
+            return await PostApiAsync("detalles-factura", new
+            {
+                id_factura_detalle_factura = detalle.IdFacturaDetalleFactura,
+                codigo_producto_detalle_factura = detalle.CodigoProductoDetalleFactura,
+                cantidad_detalle_factura = detalle.CantidadDetalleFactura,
+                precio_unitario_detalle_factura = detalle.PrecioUnitarioDetalleFactura
+            });
         }
 
         public async Task<bool> ActualizarDetalleFacturaAsync(int id, DetalleFacturaDto detalle)
         {
-            return await PutApiAsync($"/detalles-factura/{id}", detalle);
+            return await PutApiAsync($"detalles-factura/{id}", new
+            {
+                id_factura_detalle_factura = detalle.IdFacturaDetalleFactura,
+                codigo_producto_detalle_factura = detalle.CodigoProductoDetalleFactura,
+                cantidad_detalle_factura = detalle.CantidadDetalleFactura,
+                precio_unitario_detalle_factura = detalle.PrecioUnitarioDetalleFactura
+            });
         }
 
         public async Task<bool> EliminarDetalleFacturaAsync(int id)
         {
-            return await DeleteApiAsync($"/detalles-factura/{id}");
+            return await DeleteApiAsync($"detalles-factura/{id}");
         }
 
         public async Task<List<PagoDto>> ObtenerPagosAsync()
         {
-            return await GetListAsync<PagoDto>("/pagos", "pagos.json");
+            if (UsarMocks())
+                return await LeerListaMockAsync<PagoDto>("pagos.json");
+
+            var raw = await GetApiListAsync<RawPagoDto>("pagos");
+
+            if (raw == null)
+                return UsarFallbackSiApiFalla() ? await LeerListaMockAsync<PagoDto>("pagos.json") : new List<PagoDto>();
+
+            var pagos = raw.Select(MapPago)
+               .OrderBy(p => p.IdPago)
+               .ToList();
+            var facturas = await ObtenerFacturasAsync();
+
+            foreach (var pago in pagos)
+            {
+                pago.NumeroFactura = facturas.FirstOrDefault(f => f.IdFactura == pago.IdFacturaPago)?.NumeroFactura ?? "";
+            }
+
+            return pagos;
         }
 
         public async Task<List<PagoDto>> ObtenerPagosPorFacturaAsync(int idFactura)
         {
             if (UsarMocks())
             {
-                var pagos = await ObtenerPagosAsync();
-                return pagos.Where(p => p.IdFacturaPago == idFactura).ToList();
+                var pagosMock = await ObtenerPagosAsync();
+                return pagosMock.Where(p => p.IdFacturaPago == idFactura).ToList();
             }
 
-            var pagosApi = await GetApiListDirectAsync<PagoDto>($"/pagos/factura/{idFactura}");
+            var raw = await GetApiListAsync<RawPagoDto>($"pagos/factura/{idFactura}");
+            var pagosApi = raw?.Select(MapPago).ToList() ?? new List<PagoDto>();
+
             var facturas = await ObtenerFacturasAsync();
 
             foreach (var pago in pagosApi)
@@ -1011,19 +1165,20 @@ namespace FrontendFacturacion.Services
                 return pagos.FirstOrDefault(p => p.IdPago == id);
             }
 
-            var pago = await GetApiObjectDirectAsync<PagoDto>($"/pagos/{id}");
+            var raw = await GetApiObjectAsync<RawPagoDto>($"pagos/{id}");
 
-            if (pago == null && UsarFallbackSiApiFalla())
+            if (raw == null)
             {
-                var pagos = await LeerListaMockAsync<PagoDto>("pagos.json");
-                return pagos.FirstOrDefault(p => p.IdPago == id);
+                if (!UsarFallbackSiApiFalla())
+                    return null;
+
+                var pagosMock = await LeerListaMockAsync<PagoDto>("pagos.json");
+                return pagosMock.FirstOrDefault(p => p.IdPago == id);
             }
 
-            if (pago != null)
-            {
-                var facturas = await ObtenerFacturasAsync();
-                pago.NumeroFactura = facturas.FirstOrDefault(f => f.IdFactura == pago.IdFacturaPago)?.NumeroFactura ?? "";
-            }
+            var pago = MapPago(raw);
+            var facturas = await ObtenerFacturasAsync();
+            pago.NumeroFactura = facturas.FirstOrDefault(f => f.IdFactura == pago.IdFacturaPago)?.NumeroFactura ?? "";
 
             return pago;
         }
@@ -1044,7 +1199,14 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            return await PostApiAsync("/pagos", pago);
+            return await PostApiAsync("pagos", new
+            {
+                id_factura_pago = pago.IdFacturaPago,
+                fecha_pago = pago.FechaPago.ToString("yyyy-MM-dd"),
+                monto_pago = pago.MontoPago,
+                metodo_pago = pago.MetodoPago,
+                numero_referencia_pago = pago.NumeroReferenciaPago
+            });
         }
 
         public async Task<bool> ActualizarPagoAsync(int id, PagoDto pago)
@@ -1069,7 +1231,14 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            return await PutApiAsync($"/pagos/{id}", pago);
+            return await PutApiAsync($"pagos/{id}", new
+            {
+                id_factura_pago = pago.IdFacturaPago,
+                fecha_pago = pago.FechaPago.ToString("yyyy-MM-dd"),
+                monto_pago = pago.MontoPago,
+                metodo_pago = pago.MetodoPago,
+                numero_referencia_pago = pago.NumeroReferenciaPago
+            });
         }
 
         public async Task<bool> EliminarPagoAsync(int id)
@@ -1082,7 +1251,116 @@ namespace FrontendFacturacion.Services
                 return true;
             }
 
-            return await DeleteApiAsync($"/pagos/{id}");
+            return await DeleteApiAsync($"pagos/{id}");
+        }
+
+        private static CategoriaDto MapCategoria(RawCategoriaDto raw)
+        {
+            return new CategoriaDto
+            {
+                IdCategoriaProducto = raw.IdCategoriaProducto,
+                NombreCategoriaProducto = raw.NombreCategoriaProducto ?? "",
+                DescripcionCategoriaProducto = raw.DescripcionCategoriaProducto ?? ""
+            };
+        }
+
+        private static ProductoDto MapProducto(RawProductoDto raw)
+        {
+            return new ProductoDto
+            {
+                IdProducto = raw.IdProducto,
+                CodigoProducto = raw.CodigoProducto ?? "",
+                IdCategoriaProducto = raw.IdCategoriaProducto,
+                NombreCategoriaProducto = raw.Categoria?.NombreCategoriaProducto ?? raw.NombreCategoriaProducto ?? "",
+                NombreProducto = raw.NombreProducto ?? "",
+                DescripcionProducto = raw.DescripcionProducto ?? "",
+                PrecioUnitarioProducto = raw.PrecioUnitarioProducto
+            };
+        }
+
+        private static ClienteDto MapCliente(RawClienteDto raw)
+        {
+            return new ClienteDto
+            {
+                IdCliente = raw.IdCliente,
+                DpiCliente = raw.DpiCliente ?? "",
+                NitCliente = raw.NitCliente ?? "",
+                NombreCliente = raw.NombreCliente ?? "",
+                ApellidoCliente = raw.ApellidoCliente ?? "",
+                CorreoCliente = raw.CorreoCliente ?? "",
+                TelefonoCliente = raw.TelefonoCliente ?? ""
+            };
+        }
+
+        private static RolDto MapRol(RawRolDto raw)
+        {
+            return new RolDto
+            {
+                IdRol = raw.IdRol,
+                NombreRol = raw.NombreRol ?? ""
+            };
+        }
+
+        private static UsuarioDto MapUsuario(RawUsuarioDto raw)
+        {
+            return new UsuarioDto
+            {
+                DpiUsuario = raw.DpiUsuario ?? "",
+                NombreUsuario = raw.NombreUsuario ?? "",
+                ApellidoUsuario = raw.ApellidoUsuario ?? "",
+                CorreoUsuario = raw.CorreoUsuario ?? "",
+                PasswordUsuario = raw.PasswordUsuario ?? "",
+                IdRol = raw.IdRol,
+                NombreRol = raw.Rol?.NombreRol ?? raw.NombreRol ?? ""
+            };
+        }
+
+        private static FacturaDto MapFactura(RawFacturaDto raw)
+        {
+            return new FacturaDto
+            {
+                IdFactura = raw.IdFactura,
+                IdClienteFactura = raw.IdClienteFactura,
+                DpiCliente = raw.Cliente?.DpiCliente ?? raw.DpiCliente ?? "",
+                NitCliente = raw.Cliente?.NitCliente ?? raw.NitCliente ?? "",
+                NombreCliente = raw.Cliente?.NombreCliente ?? raw.NombreCliente ?? "",
+                ApellidoCliente = raw.Cliente?.ApellidoCliente ?? raw.ApellidoCliente ?? "",
+                DpiUsuarioFactura = raw.DpiUsuarioFactura ?? "",
+                NombreUsuario = raw.Usuario?.NombreUsuario ?? raw.NombreUsuario ?? "",
+                ApellidoUsuario = raw.Usuario?.ApellidoUsuario ?? raw.ApellidoUsuario ?? "",
+                NumeroFactura = raw.NumeroFactura ?? "",
+                FechaEmisionFactura = raw.FechaEmisionFactura,
+                SubtotalFactura = raw.SubtotalFactura,
+                TotalFactura = raw.TotalFactura,
+                MonedaFactura = string.IsNullOrWhiteSpace(raw.MonedaFactura) ? "GTQ" : raw.MonedaFactura
+            };
+        }
+
+        private static DetalleFacturaDto MapDetalle(RawDetalleFacturaDto raw)
+        {
+            return new DetalleFacturaDto
+            {
+                IdDetalleFactura = raw.IdDetalleFactura,
+                IdFacturaDetalleFactura = raw.IdFacturaDetalleFactura,
+                CodigoProductoDetalleFactura = raw.CodigoProductoDetalleFactura ?? "",
+                NombreProducto = raw.Producto?.NombreProducto ?? raw.NombreProducto ?? "",
+                CantidadDetalleFactura = raw.CantidadDetalleFactura,
+                PrecioUnitarioDetalleFactura = raw.PrecioUnitarioDetalleFactura
+            };
+        }
+
+        private static PagoDto MapPago(RawPagoDto raw)
+        {
+            return new PagoDto
+            {
+                IdPago = raw.IdPago,
+                IdFacturaPago = raw.IdFacturaPago,
+                NumeroFactura = raw.NumeroFactura ?? "",
+                FechaPago = raw.FechaPago,
+                MontoPago = raw.MontoPago,
+                MetodoPago = raw.MetodoPago ?? "",
+                NumeroReferenciaPago = raw.NumeroReferenciaPago ?? ""
+            };
         }
     }
 
@@ -1219,5 +1497,239 @@ namespace FrontendFacturacion.Services
         public string Ambiente { get; set; } = "";
         public string Mensaje { get; set; } = "";
         public string FechaRespuesta { get; set; } = "";
+    }
+
+    internal class ApiHealthDto
+    {
+        [JsonPropertyName("status")]
+        public string Status { get; set; } = "";
+
+        [JsonPropertyName("hostname")]
+        public string Hostname { get; set; } = "";
+
+        [JsonPropertyName("uptime")]
+        public decimal Uptime { get; set; }
+    }
+
+    internal class RawCategoriaDto
+    {
+        [JsonPropertyName("id_categoria_producto")]
+        public int IdCategoriaProducto { get; set; }
+
+        [JsonPropertyName("nombre_categoria_producto")]
+        public string? NombreCategoriaProducto { get; set; }
+
+        [JsonPropertyName("descripcion_categoria_producto")]
+        public string? DescripcionCategoriaProducto { get; set; }
+    }
+
+    internal class RawProductoDto
+    {
+        [JsonPropertyName("id_producto")]
+        public int IdProducto { get; set; }
+
+        [JsonPropertyName("codigo_producto")]
+        public string? CodigoProducto { get; set; }
+
+        [JsonPropertyName("id_categoria_producto")]
+        public int IdCategoriaProducto { get; set; }
+
+        [JsonPropertyName("nombre_categoria_producto")]
+        public string? NombreCategoriaProducto { get; set; }
+
+        [JsonPropertyName("nombre_producto")]
+        public string? NombreProducto { get; set; }
+
+        [JsonPropertyName("descripcion_producto")]
+        public string? DescripcionProducto { get; set; }
+
+        [JsonPropertyName("precio_unitario_producto")]
+        public decimal PrecioUnitarioProducto { get; set; }
+
+        [JsonPropertyName("categoria")]
+        public RawCategoriaDto? Categoria { get; set; }
+    }
+
+    internal class RawClienteDto
+    {
+        [JsonPropertyName("id_cliente")]
+        public int IdCliente { get; set; }
+
+        [JsonPropertyName("dpi_cliente")]
+        public string? DpiCliente { get; set; }
+
+        [JsonPropertyName("nit_cliente")]
+        public string? NitCliente { get; set; }
+
+        [JsonPropertyName("nombre_cliente")]
+        public string? NombreCliente { get; set; }
+
+        [JsonPropertyName("apellido_cliente")]
+        public string? ApellidoCliente { get; set; }
+
+        [JsonPropertyName("correo_cliente")]
+        public string? CorreoCliente { get; set; }
+
+        [JsonPropertyName("telefono_cliente")]
+        public string? TelefonoCliente { get; set; }
+    }
+
+    internal class RawRolDto
+    {
+        [JsonPropertyName("id_rol")]
+        public int IdRol { get; set; }
+
+        [JsonPropertyName("nombre_rol")]
+        public string? NombreRol { get; set; }
+    }
+
+    internal class RawUsuarioDto
+    {
+        [JsonPropertyName("dpi_usuario")]
+        public string? DpiUsuario { get; set; }
+
+        [JsonPropertyName("nombre_usuario")]
+        public string? NombreUsuario { get; set; }
+
+        [JsonPropertyName("apellido_usuario")]
+        public string? ApellidoUsuario { get; set; }
+
+        [JsonPropertyName("correo_usuario")]
+        public string? CorreoUsuario { get; set; }
+
+        [JsonPropertyName("password_usuario")]
+        public string? PasswordUsuario { get; set; }
+
+        [JsonPropertyName("id_rol")]
+        public int IdRol { get; set; }
+
+        [JsonPropertyName("nombre_rol")]
+        public string? NombreRol { get; set; }
+
+        [JsonPropertyName("rol")]
+        public RawRolDto? Rol { get; set; }
+    }
+
+    internal class RawFacturaDto
+    {
+        [JsonPropertyName("id_factura")]
+        public int IdFactura { get; set; }
+
+        [JsonPropertyName("id_cliente_factura")]
+        public int IdClienteFactura { get; set; }
+
+        [JsonPropertyName("dpi_cliente")]
+        public string? DpiCliente { get; set; }
+
+        [JsonPropertyName("nit_cliente")]
+        public string? NitCliente { get; set; }
+
+        [JsonPropertyName("nombre_cliente")]
+        public string? NombreCliente { get; set; }
+
+        [JsonPropertyName("apellido_cliente")]
+        public string? ApellidoCliente { get; set; }
+
+        [JsonPropertyName("dpi_usuario_factura")]
+        public string? DpiUsuarioFactura { get; set; }
+
+        [JsonPropertyName("nombre_usuario")]
+        public string? NombreUsuario { get; set; }
+
+        [JsonPropertyName("apellido_usuario")]
+        public string? ApellidoUsuario { get; set; }
+
+        [JsonPropertyName("numero_factura")]
+        public string? NumeroFactura { get; set; }
+
+        [JsonPropertyName("fecha_emision_factura")]
+        public DateTime FechaEmisionFactura { get; set; }
+
+        [JsonPropertyName("subtotal_factura")]
+        public decimal SubtotalFactura { get; set; }
+
+        [JsonPropertyName("total_factura")]
+        public decimal TotalFactura { get; set; }
+
+        [JsonPropertyName("moneda_factura")]
+        public string? MonedaFactura { get; set; }
+
+        [JsonPropertyName("cliente")]
+        public RawClienteDto? Cliente { get; set; }
+
+        [JsonPropertyName("usuario")]
+        public RawUsuarioDto? Usuario { get; set; }
+
+        [JsonPropertyName("detalles")]
+        public List<RawDetalleFacturaDto>? Detalles { get; set; }
+    }
+
+    internal class RawDetalleFacturaDto
+    {
+        [JsonPropertyName("id_detalle_factura")]
+        public int IdDetalleFactura { get; set; }
+
+        [JsonPropertyName("id_factura_detalle_factura")]
+        public int IdFacturaDetalleFactura { get; set; }
+
+        [JsonPropertyName("codigo_producto_detalle_factura")]
+        public string? CodigoProductoDetalleFactura { get; set; }
+
+        [JsonPropertyName("nombre_producto")]
+        public string? NombreProducto { get; set; }
+
+        [JsonPropertyName("cantidad_detalle_factura")]
+        public decimal CantidadDetalleFactura { get; set; }
+
+        [JsonPropertyName("precio_unitario_detalle_factura")]
+        public decimal PrecioUnitarioDetalleFactura { get; set; }
+
+        [JsonPropertyName("producto")]
+        public RawProductoDto? Producto { get; set; }
+    }
+
+    internal class RawPagoDto
+    {
+        [JsonPropertyName("id_pago")]
+        public int IdPago { get; set; }
+
+        [JsonPropertyName("id_factura_pago")]
+        public int IdFacturaPago { get; set; }
+
+        [JsonPropertyName("numero_factura")]
+        public string? NumeroFactura { get; set; }
+
+        [JsonPropertyName("fecha_pago")]
+        public DateTime FechaPago { get; set; }
+
+        [JsonPropertyName("monto_pago")]
+        public decimal MontoPago { get; set; }
+
+        [JsonPropertyName("metodo_pago")]
+        public string? MetodoPago { get; set; }
+
+        [JsonPropertyName("numero_referencia_pago")]
+        public string? NumeroReferenciaPago { get; set; }
+    }
+
+    internal class ApiCrearFacturaRequest
+    {
+        [JsonPropertyName("id_cliente")]
+        public int IdCliente { get; set; }
+
+        [JsonPropertyName("dpi_usuario")]
+        public string DpiUsuario { get; set; } = "";
+
+        [JsonPropertyName("detalles")]
+        public List<ApiCrearFacturaDetalleRequest> Detalles { get; set; } = new();
+    }
+
+    internal class ApiCrearFacturaDetalleRequest
+    {
+        [JsonPropertyName("codigo_producto")]
+        public string CodigoProducto { get; set; } = "";
+
+        [JsonPropertyName("cantidad")]
+        public decimal Cantidad { get; set; }
     }
 }
