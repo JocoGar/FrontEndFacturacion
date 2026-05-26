@@ -8,29 +8,26 @@
     @if (!Model.ApiDisponible)
     {
         <div class="card" style="border-left: 4px solid #f59e0b; margin-bottom: 16px;">
-            <strong>Estado de integración:</strong>
+            <strong>Estado del servicio:</strong>
             <p>@Model.FuenteDatos.Mensaje</p>
             <p style="margin-bottom: 0;">
-                Los datos se mostrarán cuando la API real vuelva a estar disponible.
+                La información se mostrará cuando el servicio vuelva a estar disponible.
             </p>
         </div>
     }
+
     <div>
         <h2>Sistema de Facturación</h2>
-        <p>Panel principal del frontend del sistema.</p>
+        <p>Panel principal del sistema.</p>
     </div>
 
     @if (Model.ApiDisponible)
     {
-        <span class="badge badge-green">API real disponible</span>
-    }
-    else if (Model.FuenteDatos.Origen == "MOCK_JSON")
-    {
-        <span class="badge badge-yellow">Modo de pruebas con mocks</span>
+        <span class="badge badge-green">Servicio disponible</span>
     }
     else
     {
-        <span class="badge badge-yellow">API real no disponible</span>
+        <span class="badge badge-yellow">Servicio no disponible</span>
     }
 </div>
 

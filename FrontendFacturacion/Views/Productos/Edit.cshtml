@@ -1,4 +1,5 @@
 ﻿@using FrontendFacturacion.Services
+@using System.Globalization
 @model FrontendFacturacion.Services.ProductoDto
 
 @{
@@ -30,32 +31,51 @@
 
                 <div class="form-group">
                     <label>Código</label>
-                    <input asp-for="CodigoProducto" readonly />
+                    <input asp-for="CodigoProducto"
+                           type="text"
+                           maxlength="50"
+                           data-alfanumerico-codigo="true"
+                           readonly />
+                    <span asp-validation-for="CodigoProducto" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
                     <label>Nombre</label>
-                    <input asp-for="NombreProducto" />
+                    <input asp-for="NombreProducto"
+                           type="text"
+                           maxlength="100"
+                           required />
+                    <span asp-validation-for="NombreProducto" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
                     <label>Categoría</label>
-                    <select asp-for="IdCategoriaProducto">
+                    <select asp-for="IdCategoriaProducto" required>
+                        <option value="">Seleccione una categoría</option>
                         @foreach (var categoria in categorias)
                         {
                             <option value="@categoria.IdCategoriaProducto">@categoria.NombreCategoriaProducto</option>
                         }
                     </select>
+                    <span asp-validation-for="IdCategoriaProducto" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
                     <label>Precio unitario</label>
-                    <input asp-for="PrecioUnitarioProducto" type="number" step="0.01" />
+                    <input asp-for="PrecioUnitarioProducto"
+                           type="number"
+                           value="@Model.PrecioUnitarioProducto.ToString("0.00", CultureInfo.InvariantCulture)"
+                           step="0.01"
+                           min="0.01"
+                           data-decimal-positivo="true"
+                           required />
+                    <span asp-validation-for="PrecioUnitarioProducto" class="text-danger"></span>
                 </div>
 
                 <div class="form-group" style="grid-column: 1 / -1;">
                     <label>Descripción</label>
-                    <textarea asp-for="DescripcionProducto"></textarea>
+                    <textarea asp-for="DescripcionProducto" maxlength="200"></textarea>
+                    <span asp-validation-for="DescripcionProducto" class="text-danger"></span>
                 </div>
             </div>
         </div>
@@ -66,6 +86,7 @@
         </div>
     </form>
 </div>
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 }

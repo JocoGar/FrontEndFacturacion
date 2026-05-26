@@ -38,6 +38,7 @@ namespace FrontendFacturacion.Controllers
                 return RedirectToAction("Index", "Home");
             }
 
+            ViewBag.EsConexion = _api.UltimoErrorEsConexion;
             ViewBag.Error = string.IsNullOrWhiteSpace(_api.UltimoErrorApi)
                 ? "Usuario o contraseña incorrectos."
                 : _api.UltimoErrorApi;

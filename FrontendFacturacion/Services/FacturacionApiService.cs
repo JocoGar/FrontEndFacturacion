@@ -16,11 +16,13 @@ namespace FrontendFacturacion.Services
 
         public string UltimoErrorApi { get; private set; } = "";
         public int? UltimoCodigoEstadoApi { get; private set; }
+        public bool UltimoErrorEsConexion { get; private set; }
 
         private void LimpiarErrorApi()
         {
             UltimoErrorApi = "";
             UltimoCodigoEstadoApi = null;
+            UltimoErrorEsConexion = false;
         }
 
         private async Task<string> LeerMensajeErrorAsync(HttpResponseMessage response, CancellationToken token)
@@ -28,7 +30,7 @@ namespace FrontendFacturacion.Services
             var contenido = await response.Content.ReadAsStringAsync(token);
 
             if (string.IsNullOrWhiteSpace(contenido))
-                return $"La API respondió {(int)response.StatusCode} {response.ReasonPhrase}.";
+                return $"No se pudo completar la operación. Código {(int)response.StatusCode}.";
 
             try
             {
@@ -48,78 +50,34 @@ namespace FrontendFacturacion.Services
             }
             catch
             {
-                // Si la API devuelve HTML o texto plano, se muestra el contenido resumido.
+                // Si el servidor devuelve texto o HTML, se muestra un resumen.
             }
 
             return contenido.Length > 250 ? contenido.Substring(0, 250) : contenido;
         }
-        public async Task<UsuarioDto?> LoginAsync(string usuario, string password)
-        {
-            LimpiarErrorApi();
 
-            if (string.IsNullOrWhiteSpace(usuario) || string.IsNullOrWhiteSpace(password))
-            {
-                UltimoErrorApi = "Debe ingresar usuario y contraseña.";
-                return null;
-            }
-
-            if (usuario.Equals("admin", StringComparison.OrdinalIgnoreCase) && password == "123")
-            {
-                return new UsuarioDto
-                {
-                    DpiUsuario = "admin",
-                    NombreUsuario = "Administrador",
-                    ApellidoUsuario = "Local",
-                    CorreoUsuario = "admin@local",
-                    PasswordUsuario = "123",
-                    IdRol = 1,
-                    NombreRol = "Administrador"
-                };
-            }
-
-            if (UsarMocks())
-            {
-                var usuariosMock = await ObtenerUsuariosAsync();
-
-                return usuariosMock.FirstOrDefault(u =>
-                    (u.DpiUsuario.Equals(usuario, StringComparison.OrdinalIgnoreCase) ||
-                     u.CorreoUsuario.Equals(usuario, StringComparison.OrdinalIgnoreCase)) &&
-                    u.PasswordUsuario == password);
-            }
-
-            var usuarioApi = await ObtenerUsuarioPorDpiAsync(usuario);
-
-            if (usuarioApi != null)
-            {
-                if (usuarioApi.PasswordUsuario == password)
-                    return usuarioApi;
-
-                UltimoErrorApi = "Usuario o contraseña incorrectos.";
-                return null;
-            }
-
-            if (string.IsNullOrWhiteSpace(UltimoErrorApi) || UltimoCodigoEstadoApi == 404)
-                UltimoErrorApi = "Usuario o contraseña incorrectos.";
-
-            return null;
-        }
         private void RegistrarErrorApi(string endpoint, HttpStatusCode statusCode, string mensaje)
         {
             UltimoCodigoEstadoApi = (int)statusCode;
 
+            UltimoErrorEsConexion =
+                statusCode == HttpStatusCode.ServiceUnavailable ||
+                statusCode == HttpStatusCode.BadGateway ||
+                statusCode == HttpStatusCode.GatewayTimeout;
+
             UltimoErrorApi = statusCode switch
             {
                 HttpStatusCode.ServiceUnavailable =>
-                    $"La API real no está disponible en este momento. Endpoint: /api/{endpoint}. Código 503.",
+                    "El servicio no está disponible en este momento. Verifique que los nodos estén levantados y vuelva a intentarlo.",
 
                 HttpStatusCode.BadGateway =>
-                    $"El balanceador no pudo comunicarse con los nodos de API. Endpoint: /api/{endpoint}. Código 502.",
+                    "No se pudo establecer comunicación con el servicio. Verifique que los nodos estén levantados y vuelva a intentarlo.",
 
                 HttpStatusCode.GatewayTimeout =>
-                    $"La API tardó demasiado en responder. Endpoint: /api/{endpoint}. Código 504.",
+                    "El servicio tardó demasiado en responder. Verifique los nodos y vuelva a intentarlo.",
 
                 HttpStatusCode.NotFound =>
-                    $"El recurso solicitado no existe en la API. Endpoint: /api/{endpoint}. Código 404.",
+                    mensaje,
 
                 HttpStatusCode.Unauthorized =>
                     "Usuario o contraseña incorrectos.",
@@ -131,24 +89,27 @@ namespace FrontendFacturacion.Services
                     mensaje,
 
                 _ =>
-                    $"Error al consumir la API real. Endpoint: /api/{endpoint}. Código {(int)statusCode}. Detalle: {mensaje}"
+                    string.IsNullOrWhiteSpace(mensaje)
+                        ? "No se pudo completar la operación."
+                        : mensaje
             };
         }
 
         private void RegistrarExcepcionApi(string endpoint, Exception ex)
         {
             UltimoCodigoEstadoApi = null;
+            UltimoErrorEsConexion = true;
 
             UltimoErrorApi = ex switch
             {
                 TaskCanceledException =>
-                    $"La API no respondió dentro del tiempo configurado. Endpoint: /api/{endpoint}.",
+                    "El servicio tardó demasiado en responder. Verifique los nodos y vuelva a intentarlo.",
 
                 HttpRequestException =>
-                    $"No se pudo establecer comunicación con la API real. Endpoint: /api/{endpoint}. Verifique la VIP, HAProxy o los nodos de API.",
+                    "No se pudo establecer comunicación con el servicio. Verifique que los nodos estén levantados y vuelva a intentarlo.",
 
                 _ =>
-                    $"Error inesperado al consumir la API real. Endpoint: /api/{endpoint}. Detalle: {ex.Message}"
+                    "Ocurrió un problema inesperado al comunicarse con el servicio. Verifique los nodos y vuelva a intentarlo."
             };
         }
 
@@ -174,7 +135,77 @@ namespace FrontendFacturacion.Services
                 WriteIndented = true
             };
         }
+        public async Task<UsuarioDto?> LoginAsync(string usuario, string password)
+        {
+            LimpiarErrorApi();
 
+            if (string.IsNullOrWhiteSpace(usuario) || string.IsNullOrWhiteSpace(password))
+            {
+                UltimoErrorApi = "Debe ingresar usuario y contraseña.";
+                return null;
+            }
+
+            // Credenciales locales permitidas para administración/pruebas
+            if (usuario.Equals("admin", StringComparison.OrdinalIgnoreCase) && password == "123")
+            {
+                return new UsuarioDto
+                {
+                    DpiUsuario = "admin",
+                    NombreUsuario = "Administrador",
+                    ApellidoUsuario = "Local",
+                    CorreoUsuario = "admin@local",
+                    PasswordUsuario = "123",
+                    IdRol = 1,
+                    NombreRol = "Administrador"
+                };
+            }
+
+            // Si está en modo pruebas, valida contra los usuarios locales
+            if (UsarMocks())
+            {
+                var usuariosMock = await ObtenerUsuariosAsync();
+
+                var usuarioMock = usuariosMock.FirstOrDefault(u =>
+                    (u.DpiUsuario.Equals(usuario, StringComparison.OrdinalIgnoreCase) ||
+                     u.CorreoUsuario.Equals(usuario, StringComparison.OrdinalIgnoreCase)) &&
+                    u.PasswordUsuario == password);
+
+                if (usuarioMock == null)
+                    UltimoErrorApi = "Usuario o contraseña incorrectos.";
+
+                return usuarioMock;
+            }
+
+            // Usuarios reales: se busca por DPI
+            var usuarioApi = await ObtenerUsuarioPorDpiAsync(usuario);
+
+            if (usuarioApi != null)
+            {
+                if (usuarioApi.PasswordUsuario == password)
+                    return usuarioApi;
+
+                UltimoErrorApi = "Usuario o contraseña incorrectos.";
+                UltimoErrorEsConexion = false;
+                return null;
+            }
+
+            // Si el servicio respondió 404, no es problema de nodos: simplemente no existe el usuario.
+            if (UltimoCodigoEstadoApi == 404)
+            {
+                UltimoErrorApi = "Usuario o contraseña incorrectos.";
+                UltimoErrorEsConexion = false;
+                return null;
+            }
+
+            // Si la API cayó, GetApiObjectAsync ya dejó el mensaje correcto en UltimoErrorApi.
+            if (string.IsNullOrWhiteSpace(UltimoErrorApi))
+            {
+                UltimoErrorApi = "Usuario o contraseña incorrectos.";
+                UltimoErrorEsConexion = false;
+            }
+
+            return null;
+        }
         private bool UsarMocks()
         {
             return _configuration.GetValue<bool>("ApiSettings:UseMockData");
@@ -182,7 +213,7 @@ namespace FrontendFacturacion.Services
 
         private bool UsarFallbackSiApiFalla()
         {
-            return _configuration.GetValue<bool>("ApiSettings:UseFallbackMockWhenApiFails", true);
+            return _configuration.GetValue<bool>("ApiSettings:UseFallbackMockWhenApiFails", false);
         }
 
         private int ObtenerTimeout()
@@ -310,13 +341,19 @@ namespace FrontendFacturacion.Services
 
         private async Task<TRaw?> GetApiObjectAsync<TRaw>(string endpoint, string? objectProperty = null)
         {
+            LimpiarErrorApi();
+
             try
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
                 var response = await _httpClient.GetAsync(Endpoint(endpoint), cts.Token);
 
                 if (!response.IsSuccessStatusCode)
+                {
+                    var mensaje = await LeerMensajeErrorAsync(response, cts.Token);
+                    RegistrarErrorApi(endpoint, response.StatusCode, mensaje);
                     return default;
+                }
 
                 var json = await response.Content.ReadAsStringAsync(cts.Token);
 
@@ -334,8 +371,9 @@ namespace FrontendFacturacion.Services
 
                 return JsonSerializer.Deserialize<TRaw>(json, _apiJsonOptions);
             }
-            catch
+            catch (Exception ex)
             {
+                RegistrarExcepcionApi(endpoint, ex);
                 return default;
             }
         }
@@ -452,10 +490,10 @@ namespace FrontendFacturacion.Services
             {
                 return new FuenteDatosDto
                 {
-                    Origen = "MOCK_JSON",
-                    NombreApi = "Mocks locales",
-                    Ambiente = "Modo de pruebas",
-                    Mensaje = "El frontend está usando archivos JSON locales porque UseMockData está activado.",
+                    Origen = "MODO_PRUEBAS",
+                    NombreApi = "Modo de pruebas",
+                    Ambiente = "Pruebas locales",
+                    Mensaje = "El sistema está trabajando en modo de pruebas.",
                     FechaRespuesta = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
                 };
             }
@@ -466,21 +504,21 @@ namespace FrontendFacturacion.Services
             {
                 return new FuenteDatosDto
                 {
-                    Origen = "API_REAL",
-                    NombreApi = "API real de facturación",
-                    Ambiente = "Integración real",
-                    Mensaje = $"API real disponible vía /api/health. Nodo API: {health.Hostname}.",
+                    Origen = "DISPONIBLE",
+                    NombreApi = "Servicio de facturación",
+                    Ambiente = "Operativo",
+                    Mensaje = $"El servicio está disponible. Nodo activo: {health.Hostname}.",
                     FechaRespuesta = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
                 };
             }
 
             return new FuenteDatosDto
             {
-                Origen = "API_CAIDA",
-                NombreApi = "API real no disponible",
-                Ambiente = "Error controlado",
+                Origen = "NO_DISPONIBLE",
+                NombreApi = "Servicio no disponible",
+                Ambiente = "Sin conexión",
                 Mensaje = string.IsNullOrWhiteSpace(UltimoErrorApi)
-                    ? "La API real no respondió correctamente."
+                    ? "El servicio no respondió correctamente. Verifique que los nodos estén levantados."
                     : UltimoErrorApi,
                 FechaRespuesta = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
             };
@@ -1582,7 +1620,7 @@ namespace FrontendFacturacion.Services
         [StringLength(200, ErrorMessage = "La descripción no puede superar los 200 caracteres.")]
         public string DescripcionProducto { get; set; } = "";
 
-        [Range(typeof(decimal), "0.01", "9999999999.99", ErrorMessage = "El precio unitario debe ser mayor a 0.")]
+        [Range(0.01, 9999999999.99, ErrorMessage = "El precio unitario debe ser mayor a 0.")]
         public decimal PrecioUnitarioProducto { get; set; }
     }
 
@@ -1596,8 +1634,8 @@ namespace FrontendFacturacion.Services
         public string DpiCliente { get; set; } = "";
 
         [Required(ErrorMessage = "El NIT es obligatorio.")]
-        [StringLength(9, ErrorMessage = "El NIT no puede superar los 9 dígitos.")]
-        [RegularExpression(@"^\d{1,9}$", ErrorMessage = "El NIT solo debe contener números y máximo 9 dígitos.")]
+        [StringLength(10, ErrorMessage = "El NIT no puede superar 9 dígitos más guion.")]
+        [RegularExpression(@"^\d{1,8}-\d$", ErrorMessage = "El NIT debe tener guion antes del último dígito.")]
         public string NitCliente { get; set; } = "";
 
         [Required(ErrorMessage = "El nombre del cliente es obligatorio.")]
@@ -1614,8 +1652,9 @@ namespace FrontendFacturacion.Services
         [StringLength(150, ErrorMessage = "El correo no puede superar los 150 caracteres.")]
         public string CorreoCliente { get; set; } = "";
 
-        [StringLength(20, ErrorMessage = "El teléfono no puede superar los 20 dígitos.")]
-        [RegularExpression(@"^\d{8,20}$", ErrorMessage = "El teléfono debe contener solo números, mínimo 8 y máximo 20 dígitos.")]
+        [Required(ErrorMessage = "El teléfono es obligatorio.")]
+        [StringLength(9, MinimumLength = 9, ErrorMessage = "El teléfono debe tener el formato 0000-0000.")]
+        [RegularExpression(@"^\d{4}-\d{4}$", ErrorMessage = "El teléfono debe tener el formato 0000-0000.")]
         public string TelefonoCliente { get; set; } = "";
     }
 
@@ -1705,7 +1744,7 @@ namespace FrontendFacturacion.Services
         [DataType(DataType.Date)]
         public DateTime FechaPago { get; set; }
 
-        [Range(typeof(decimal), "0.01", "999999999999.99", ErrorMessage = "El monto del pago debe ser mayor a 0.")]
+        [Range(0.01, 999999999999.99, ErrorMessage = "El monto del pago debe ser mayor a 0.")]
         public decimal MontoPago { get; set; }
 
         [Required(ErrorMessage = "Debe seleccionar un método de pago.")]
@@ -1745,7 +1784,6 @@ namespace FrontendFacturacion.Services
         public int IdClienteFactura { get; set; }
 
         [Required(ErrorMessage = "Debe seleccionar un usuario vendedor.")]
-        [RegularExpression(@"^\d{13}$", ErrorMessage = "El DPI del usuario debe tener 13 dígitos.")]
         public string DpiUsuarioFactura { get; set; } = "";
 
         [StringLength(30, ErrorMessage = "El número de factura no puede superar los 30 caracteres.")]
@@ -1770,10 +1808,10 @@ namespace FrontendFacturacion.Services
         [StringLength(50, ErrorMessage = "El código del producto no puede superar los 50 caracteres.")]
         public string CodigoProductoDetalleFactura { get; set; } = "";
 
-        [Range(typeof(decimal), "0.01", "9999999999.99", ErrorMessage = "La cantidad debe ser mayor a 0.")]
+        [Range(0.01, 9999999999.99, ErrorMessage = "La cantidad debe ser mayor a 0.")]
         public decimal CantidadDetalleFactura { get; set; }
 
-        [Range(typeof(decimal), "0.01", "9999999999.99", ErrorMessage = "El precio unitario debe ser mayor a 0.")]
+        [Range(0.01, 9999999999.99, ErrorMessage = "El precio unitario debe ser mayor a 0.")]
         public decimal PrecioUnitarioDetalleFactura { get; set; }
     }
 

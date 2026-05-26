@@ -1,4 +1,5 @@
 ﻿@using FrontendFacturacion.Services
+@using System.Globalization
 @model FrontendFacturacion.Services.PagoDto
 
 @{
@@ -14,6 +15,7 @@
 
     <a asp-controller="Pagos" asp-action="Index" class="btn btn-outline">Regresar</a>
 </div>
+
 <partial name="_FormFeedback" />
 
 <div class="form-card">
@@ -29,37 +31,55 @@
 
                 <div class="form-group">
                     <label>Factura</label>
-                    <select asp-for="IdFacturaPago">
+                    <select asp-for="IdFacturaPago" required>
+                        <option value="">Seleccione una factura</option>
                         @foreach (var factura in facturas)
                         {
                             <option value="@factura.IdFactura">@factura.NumeroFactura - @factura.Cliente</option>
                         }
                     </select>
+                    <span asp-validation-for="IdFacturaPago" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
                     <label>Fecha de pago</label>
-                    <input asp-for="FechaPago" type="date" />
+                    <input asp-for="FechaPago"
+                           type="date"
+                           data-no-futuro="true"
+                           required />
+                    <span asp-validation-for="FechaPago" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
                     <label>Monto</label>
-                    <input asp-for="MontoPago" type="number" step="0.01" min="0" />
+                    <input asp-for="MontoPago"
+                           type="number"
+                           value="@Model.MontoPago.ToString("0.00", CultureInfo.InvariantCulture)"
+                           step="0.01"
+                           min="0.01"
+                           data-decimal-positivo="true"
+                           required />
+                    <span asp-validation-for="MontoPago" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
                     <label>Método de pago</label>
-                    <select asp-for="MetodoPago">
+                    <select asp-for="MetodoPago" required>
+                        <option value="">Seleccione</option>
                         <option>EFECTIVO</option>
                         <option>TARJETA</option>
                         <option>TRANSFERENCIA</option>
                         <option>DEPOSITO</option>
                     </select>
+                    <span asp-validation-for="MetodoPago" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
                     <label>Número de referencia</label>
-                    <input asp-for="NumeroReferenciaPago" />
+                    <input asp-for="NumeroReferenciaPago"
+                           maxlength="100"
+                           data-referencia="true" />
+                    <span asp-validation-for="NumeroReferenciaPago" class="text-danger"></span>
                 </div>
             </div>
         </div>
@@ -70,6 +90,7 @@
         </div>
     </form>
 </div>
+
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
 }

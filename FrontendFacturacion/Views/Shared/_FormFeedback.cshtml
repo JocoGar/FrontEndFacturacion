@@ -1,4 +1,20 @@
-﻿@if (!ViewData.ModelState.IsValid)
+﻿@{
+    var mensajeApi = ViewBag.ApiError as string;
+    var esConexion = ViewBag.ApiErrorEsConexion is bool valorConexion && valorConexion;
+
+    if (!esConexion && !string.IsNullOrWhiteSpace(mensajeApi))
+    {
+        var mensajeLower = mensajeApi.ToLower();
+
+        esConexion =
+            mensajeLower.Contains("nodos") ||
+            mensajeLower.Contains("servicio no está disponible") ||
+            mensajeLower.Contains("tardó demasiado") ||
+            mensajeLower.Contains("comunicación con el servicio");
+    }
+}
+
+@if (!ViewData.ModelState.IsValid)
 {
     <div class="card" style="border-left: 4px solid #ef4444; margin-bottom: 16px;">
         <strong>Revise la información ingresada</strong>
@@ -6,11 +22,18 @@
     </div>
 }
 
-@if (!string.IsNullOrWhiteSpace(ViewBag.ApiError as string))
+@if (!string.IsNullOrWhiteSpace(mensajeApi))
 {
     <div class="card" style="border-left: 4px solid #ef4444; margin-bottom: 16px;">
-        <strong>Error de comunicación con la API real</strong>
-        <p>@ViewBag.ApiError</p>
-        <p style="margin-bottom: 0;">No se están usando datos.</p>
+        @if (esConexion)
+        {
+            <strong>Problema de comunicación</strong>
+        }
+        else
+        {
+            <strong>No se pudo completar la operación</strong>
+        }
+
+        <p>@mensajeApi</p>
     </div>
 }

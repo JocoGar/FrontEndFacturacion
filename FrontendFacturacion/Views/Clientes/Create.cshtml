@@ -37,10 +37,10 @@
                     <label>NIT</label>
                     <input asp-for="NitCliente"
                            type="text"
-                           maxlength="9"
+                           maxlength="10"
                            inputmode="numeric"
-                           data-solo-numeros="true"
-                           placeholder="Ejemplo: 123456789"
+                           data-formato-nit="true"
+                           placeholder="Ejemplo: 1234567-8"
                            required />
                     <span asp-validation-for="NitCliente" class="text-danger"></span>
                 </div>
@@ -80,10 +80,11 @@
                     <label>Teléfono</label>
                     <input asp-for="TelefonoCliente"
                            type="text"
-                           maxlength="20"
+                           maxlength="9"
                            inputmode="numeric"
-                           data-solo-numeros="true"
-                           placeholder="55551234" />
+                           data-formato-telefono="true"
+                           placeholder="5555-1234"
+                           required />
                     <span asp-validation-for="TelefonoCliente" class="text-danger"></span>
                 </div>
             </div>

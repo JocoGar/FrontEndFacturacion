@@ -16,19 +16,21 @@ namespace FrontendFacturacion.Controllers
         {
             var fuenteDatos = await _api.ObtenerFuenteDatosAsync();
 
-            var productos = fuenteDatos.Origen == "API_REAL"
+            var servicioDisponible = fuenteDatos.Origen == "DISPONIBLE";
+
+            var productos = servicioDisponible
                 ? await _api.ObtenerProductosAsync()
                 : new List<ProductoDto>();
 
-            var clientes = fuenteDatos.Origen == "API_REAL"
+            var clientes = servicioDisponible
                 ? await _api.ObtenerClientesAsync()
                 : new List<ClienteDto>();
 
-            var facturas = fuenteDatos.Origen == "API_REAL"
+            var facturas = servicioDisponible
                 ? await _api.ObtenerFacturasAsync()
                 : new List<FacturaDto>();
 
-            var pagos = fuenteDatos.Origen == "API_REAL"
+            var pagos = servicioDisponible
                 ? await _api.ObtenerPagosAsync()
                 : new List<PagoDto>();
 
@@ -39,9 +41,12 @@ namespace FrontendFacturacion.Controllers
                 TotalFacturas = facturas.Count,
                 FacturasPendientes = 0,
                 TotalPagos = pagos.Count,
-                ApiDisponible = fuenteDatos.Origen == "API_REAL",
+                ApiDisponible = servicioDisponible,
                 FuenteDatos = fuenteDatos,
-                UltimasFacturas = facturas.Take(5).ToList()
+                UltimasFacturas = facturas
+                    .OrderByDescending(f => f.FechaEmisionFactura)
+                    .Take(5)
+                    .ToList()
             };
 
             return View(model);

@@ -18,7 +18,7 @@ namespace FrontendFacturacion.Controllers
 
             ViewData["Hostname"] = Environment.MachineName;
             ViewData["FechaServidor"] = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
-            ViewData["ApiDisponible"] = fuenteDatos.Origen == "API_REAL";
+            ViewData["ApiDisponible"] = fuenteDatos.Origen == "DISPONIBLE";
             ViewBag.FuenteDatos = fuenteDatos;
 
             return View();

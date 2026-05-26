@@ -17,9 +17,13 @@ namespace FrontendFacturacion.Controllers
             var facturas = await _api.ObtenerFacturasAsync();
 
             ViewBag.ApiError = TempData["ApiError"] as string;
+            ViewBag.ApiErrorEsConexion = TempData["ApiErrorEsConexion"] is bool esConexion && esConexion;
 
             if (string.IsNullOrWhiteSpace(ViewBag.ApiError as string))
+            {
                 ViewBag.ApiError = _api.UltimoErrorApi;
+                ViewBag.ApiErrorEsConexion = _api.UltimoErrorEsConexion;
+            }
 
             if (!string.IsNullOrWhiteSpace(buscar))
             {
@@ -40,34 +44,56 @@ namespace FrontendFacturacion.Controllers
         public async Task<IActionResult> Create()
         {
             await CargarCombosFacturaAsync();
+
             return View(new FacturaCrearViewModel
             {
                 FechaEmisionFactura = DateTime.Today,
-                MonedaFactura = "GTQ"
+                MonedaFactura = "GTQ",
+                Detalles = new List<DetalleFacturaCrearDto>
+                {
+                    new DetalleFacturaCrearDto
+                    {
+                        CantidadDetalleFactura = 1,
+                        PrecioUnitarioDetalleFactura = 0
+                    }
+                }
             });
         }
 
         [HttpPost]
         public async Task<IActionResult> Create(FacturaCrearViewModel factura)
         {
-            factura.Detalles = factura.Detalles
+            factura.DpiUsuarioFactura = (factura.DpiUsuarioFactura ?? "").Trim();
+            factura.MonedaFactura = string.IsNullOrWhiteSpace(factura.MonedaFactura)
+                ? "GTQ"
+                : factura.MonedaFactura.Trim().ToUpper();
+
+            factura.Detalles = factura.Detalles?
                 .Where(d =>
                     !string.IsNullOrWhiteSpace(d.CodigoProductoDetalleFactura) ||
                     d.CantidadDetalleFactura > 0 ||
                     d.PrecioUnitarioDetalleFactura > 0)
-                .ToList();
+                .ToList() ?? new List<DetalleFacturaCrearDto>();
 
             ModelState.Clear();
-            TryValidateModel(factura);
 
-            if (!factura.Detalles.Any())
-                ModelState.AddModelError("Detalles", "Debe agregar al menos un producto o servicio.");
+            if (factura.IdClienteFactura <= 0)
+                ModelState.AddModelError(nameof(factura.IdClienteFactura), "Debe seleccionar un cliente.");
+
+            if (string.IsNullOrWhiteSpace(factura.DpiUsuarioFactura))
+                ModelState.AddModelError(nameof(factura.DpiUsuarioFactura), "Debe seleccionar un usuario vendedor.");
 
             if (factura.FechaEmisionFactura == default)
                 ModelState.AddModelError(nameof(factura.FechaEmisionFactura), "La fecha de emisión es obligatoria.");
 
             if (factura.FechaEmisionFactura.Date > DateTime.Today)
                 ModelState.AddModelError(nameof(factura.FechaEmisionFactura), "La fecha de emisión no puede ser mayor a la fecha actual.");
+
+            if (factura.MonedaFactura != "GTQ" && factura.MonedaFactura != "USD")
+                ModelState.AddModelError(nameof(factura.MonedaFactura), "La moneda solo puede ser GTQ o USD.");
+
+            if (!factura.Detalles.Any())
+                ModelState.AddModelError("Detalles", "Debe agregar al menos un producto o servicio.");
 
             foreach (var detalle in factura.Detalles)
             {
@@ -91,10 +117,18 @@ namespace FrontendFacturacion.Controllers
 
             if (!ok)
             {
-                var error = _api.UltimoErrorApi;
+                var error = string.IsNullOrWhiteSpace(_api.UltimoErrorApi)
+                    ? "No se pudo guardar la factura."
+                    : _api.UltimoErrorApi;
+
+                var esErrorConexion = _api.UltimoErrorEsConexion;
+
+                ModelState.Clear();
 
                 await CargarCombosFacturaAsync();
+
                 ViewBag.ApiError = error;
+                ViewBag.ApiErrorEsConexion = esErrorConexion;
 
                 return View(factura);
             }
@@ -112,6 +146,8 @@ namespace FrontendFacturacion.Controllers
                     ? "No se encontró la factura solicitada."
                     : _api.UltimoErrorApi;
 
+                TempData["ApiErrorEsConexion"] = _api.UltimoErrorEsConexion;
+
                 return RedirectToAction("Index");
             }
 
@@ -128,6 +164,8 @@ namespace FrontendFacturacion.Controllers
                 TempData["ApiError"] = string.IsNullOrWhiteSpace(_api.UltimoErrorApi)
                     ? "No se pudo eliminar la factura."
                     : _api.UltimoErrorApi;
+
+                TempData["ApiErrorEsConexion"] = _api.UltimoErrorEsConexion;
             }
 
             return RedirectToAction("Index");
@@ -135,27 +173,32 @@ namespace FrontendFacturacion.Controllers
 
         private async Task CargarCombosFacturaAsync()
         {
+            var errores = new List<string>();
+            var hayErrorConexion = false;
+
             ViewBag.Clientes = await _api.ObtenerClientesAsync();
-            var errorClientes = _api.UltimoErrorApi;
+            if (!string.IsNullOrWhiteSpace(_api.UltimoErrorApi))
+            {
+                errores.Add(_api.UltimoErrorApi);
+                hayErrorConexion = hayErrorConexion || _api.UltimoErrorEsConexion;
+            }
 
             ViewBag.Productos = await _api.ObtenerProductosAsync();
-            var errorProductos = _api.UltimoErrorApi;
+            if (!string.IsNullOrWhiteSpace(_api.UltimoErrorApi))
+            {
+                errores.Add(_api.UltimoErrorApi);
+                hayErrorConexion = hayErrorConexion || _api.UltimoErrorEsConexion;
+            }
 
             ViewBag.Usuarios = await _api.ObtenerUsuariosAsync();
-            var errorUsuarios = _api.UltimoErrorApi;
-
-            var errores = new List<string>();
-
-            if (!string.IsNullOrWhiteSpace(errorClientes))
-                errores.Add(errorClientes);
-
-            if (!string.IsNullOrWhiteSpace(errorProductos))
-                errores.Add(errorProductos);
-
-            if (!string.IsNullOrWhiteSpace(errorUsuarios))
-                errores.Add(errorUsuarios);
+            if (!string.IsNullOrWhiteSpace(_api.UltimoErrorApi))
+            {
+                errores.Add(_api.UltimoErrorApi);
+                hayErrorConexion = hayErrorConexion || _api.UltimoErrorEsConexion;
+            }
 
             ViewBag.ApiError = errores.FirstOrDefault();
+            ViewBag.ApiErrorEsConexion = hayErrorConexion;
         }
     }
 }

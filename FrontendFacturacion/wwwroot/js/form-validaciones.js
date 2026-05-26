@@ -1,4 +1,28 @@
-﻿document.addEventListener("input", function (e) {
+﻿function soloDigitos(valor) {
+    return (valor || "").replace(/\D/g, "");
+}
+
+function formatearNit(valor) {
+    const digitos = soloDigitos(valor).slice(0, 9);
+
+    if (digitos.length <= 1) {
+        return digitos;
+    }
+
+    return digitos.slice(0, -1) + "-" + digitos.slice(-1);
+}
+
+function formatearTelefono(valor) {
+    const digitos = soloDigitos(valor).slice(0, 8);
+
+    if (digitos.length <= 4) {
+        return digitos;
+    }
+
+    return digitos.slice(0, 4) + "-" + digitos.slice(4);
+}
+
+document.addEventListener("input", function (e) {
     const input = e.target;
 
     if (!(input instanceof HTMLInputElement) && !(input instanceof HTMLTextAreaElement)) {
@@ -6,7 +30,15 @@
     }
 
     if (input.dataset.soloNumeros === "true") {
-        input.value = input.value.replace(/\D/g, "");
+        input.value = soloDigitos(input.value);
+    }
+
+    if (input.dataset.formatoNit === "true") {
+        input.value = formatearNit(input.value);
+    }
+
+    if (input.dataset.formatoTelefono === "true") {
+        input.value = formatearTelefono(input.value);
     }
 
     if (input.dataset.soloLetras === "true") {

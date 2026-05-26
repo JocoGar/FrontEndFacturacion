@@ -9,7 +9,27 @@
     var productos = ViewBag.Productos as List<ProductoDto> ?? new();
     var usuarios = ViewBag.Usuarios as List<UsuarioDto> ?? new();
 
-    var numeroFacturaInterno = $"F-{DateTime.Now:yyyyMMddHHmmss}";
+    var numeroFacturaInterno = string.IsNullOrWhiteSpace(Model.NumeroFactura)
+        ? $"F-{DateTime.Now:yyyyMMddHHmmss}"
+        : Model.NumeroFactura;
+
+    var fechaFactura = Model.FechaEmisionFactura == default
+        ? DateTime.Today
+        : Model.FechaEmisionFactura;
+
+    var detalles = Model.Detalles != null && Model.Detalles.Any()
+        ? Model.Detalles
+        : new List<DetalleFacturaCrearDto>
+        {
+            new DetalleFacturaCrearDto
+            {
+                CantidadDetalleFactura = 1,
+                PrecioUnitarioDetalleFactura = 0
+            }
+        };
+
+    var clienteSeleccionadoExiste = clientes.Any(c => c.IdCliente == Model.IdClienteFactura);
+    var usuarioSeleccionadoExiste = usuarios.Any(u => u.DpiUsuario == Model.DpiUsuarioFactura);
 }
 
 <div class="page-title">
@@ -35,6 +55,12 @@
                     <label>Cliente</label>
                     <select asp-for="IdClienteFactura" required>
                         <option value="">Seleccione un cliente</option>
+
+                        @if (Model.IdClienteFactura > 0 && !clienteSeleccionadoExiste)
+                        {
+                            <option value="@Model.IdClienteFactura" selected>Cliente seleccionado</option>
+                        }
+
                         @foreach (var cliente in clientes)
                         {
                             <option value="@cliente.IdCliente">
@@ -49,6 +75,12 @@
                     <label>Usuario vendedor</label>
                     <select asp-for="DpiUsuarioFactura" required>
                         <option value="">Seleccione un usuario</option>
+
+                        @if (!string.IsNullOrWhiteSpace(Model.DpiUsuarioFactura) && !usuarioSeleccionadoExiste)
+                        {
+                            <option value="@Model.DpiUsuarioFactura" selected>Usuario seleccionado</option>
+                        }
+
                         @foreach (var usuario in usuarios)
                         {
                             <option value="@usuario.DpiUsuario">
@@ -63,7 +95,6 @@
                     <label>Moneda</label>
                     <select asp-for="MonedaFactura" required>
                         <option value="GTQ">GTQ</option>
-                        <option value="USD">USD</option>
                     </select>
                     <span asp-validation-for="MonedaFactura" class="text-danger"></span>
                 </div>
@@ -72,7 +103,7 @@
                     <label>Fecha de emisión</label>
                     <input asp-for="FechaEmisionFactura"
                            type="date"
-                           value="@DateTime.Now.ToString("yyyy-MM-dd")"
+                           value="@fechaFactura.ToString("yyyy-MM-dd")"
                            data-no-futuro="true"
                            required />
                     <span asp-validation-for="FechaEmisionFactura" class="text-danger"></span>
@@ -80,7 +111,7 @@
 
                 <div class="form-group">
                     <label>Número de factura</label>
-                    <input type="text" value="Generado automáticamente por la API" readonly />
+                    <input type="text" value="Generado automáticamente" readonly />
                 </div>
             </div>
         </div>
@@ -97,42 +128,73 @@
                         <th class="text-right">Acción</th>
                     </tr>
                 </thead>
+
                 <tbody>
-                    <tr>
-                        <td>
-                            <select name="Detalles[0].CodigoProductoDetalleFactura" onchange="actualizarPrecio(this)" required>
-                                <option value="" data-precio="0.00">Seleccione</option>
-                                @foreach (var producto in productos)
-                                {
-                                    <option value="@producto.CodigoProducto"
-                                            data-precio="@producto.PrecioUnitarioProducto.ToString("0.00", CultureInfo.InvariantCulture)">
-                                        @producto.CodigoProducto - @producto.NombreProducto
-                                    </option>
-                                }
-                            </select>
-                        </td>
-                        <td class="text-center">
-                            <input name="Detalles[0].CantidadDetalleFactura"
-                                   type="number"
-                                   value="1"
-                                   min="0.01"
-                                   step="0.01"
-                                   data-decimal-positivo="true"
-                                   required />
-                        </td>
-                        <td class="text-right">
-                            <input name="Detalles[0].PrecioUnitarioDetalleFactura"
-                                   type="number"
-                                   value="0.00"
-                                   step="0.01"
-                                   min="0.01"
-                                   readonly
-                                   required />
-                        </td>
-                        <td class="text-right">
-                            <button class="action-btn" type="button" onclick="eliminarFila(this)">Quitar</button>
-                        </td>
-                    </tr>
+                    @for (int i = 0; i < detalles.Count; i++)
+                    {
+                        var detalle = detalles[i];
+                        var productoSeleccionadoExiste = productos.Any(p => p.CodigoProducto == detalle.CodigoProductoDetalleFactura);
+
+                        <tr>
+                            <td>
+                                <select name="Detalles[@i].CodigoProductoDetalleFactura" onchange="actualizarPrecio(this)" required>
+                                    <option value="" data-precio="0.00">Seleccione</option>
+
+                                    @if (!string.IsNullOrWhiteSpace(detalle.CodigoProductoDetalleFactura) && !productoSeleccionadoExiste)
+                                    {
+                                        <option value="@detalle.CodigoProductoDetalleFactura"
+                                                data-precio="@detalle.PrecioUnitarioDetalleFactura.ToString("0.00", CultureInfo.InvariantCulture)"
+                                                selected>
+                                            Producto seleccionado
+                                        </option>
+                                    }
+
+                                    @foreach (var producto in productos)
+                                    {
+                                        if (producto.CodigoProducto == detalle.CodigoProductoDetalleFactura)
+                                        {
+                                            <option value="@producto.CodigoProducto"
+                                                    data-precio="@producto.PrecioUnitarioProducto.ToString("0.00", CultureInfo.InvariantCulture)"
+                                                    selected>
+                                                @producto.CodigoProducto - @producto.NombreProducto
+                                            </option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@producto.CodigoProducto"
+                                                    data-precio="@producto.PrecioUnitarioProducto.ToString("0.00", CultureInfo.InvariantCulture)">
+                                                @producto.CodigoProducto - @producto.NombreProducto
+                                            </option>
+                                        }
+                                    }
+                                </select>
+                            </td>
+
+                            <td class="text-center">
+                                <input name="Detalles[@i].CantidadDetalleFactura"
+                                       type="number"
+                                       value="@detalle.CantidadDetalleFactura.ToString("0.##", CultureInfo.InvariantCulture)"
+                                       min="0.01"
+                                       step="0.01"
+                                       data-decimal-positivo="true"
+                                       required />
+                            </td>
+
+                            <td class="text-right">
+                                <input name="Detalles[@i].PrecioUnitarioDetalleFactura"
+                                       type="number"
+                                       value="@detalle.PrecioUnitarioDetalleFactura.ToString("0.00", CultureInfo.InvariantCulture)"
+                                       step="0.01"
+                                       min="0.00"
+                                       readonly
+                                       required />
+                            </td>
+
+                            <td class="text-right">
+                                <button class="action-btn" type="button" onclick="eliminarFila(this)">Quitar</button>
+                            </td>
+                        </tr>
+                    }
                 </tbody>
             </table>
 
@@ -149,7 +211,7 @@
 
 @section Scripts {
     <script>
-        let indiceDetalle = 1;
+        let indiceDetalle = @detalles.Count;
 
         function actualizarPrecio(selectProducto) {
             const opcionSeleccionada = selectProducto.options[selectProducto.selectedIndex];
@@ -173,13 +235,14 @@
                         <option value="" data-precio="0.00">Seleccione</option>
                         @foreach (var producto in productos)
                         {
-                                    <option value="@producto.CodigoProducto"
-                                            data-precio="@producto.PrecioUnitarioProducto.ToString("0.00", CultureInfo.InvariantCulture)">
-                                        @producto.CodigoProducto - @producto.NombreProducto
-                                    </option>
+                                <option value="@producto.CodigoProducto"
+                                        data-precio="@producto.PrecioUnitarioProducto.ToString("0.00", CultureInfo.InvariantCulture)">
+                                    @producto.CodigoProducto - @producto.NombreProducto
+                                </option>
                         }
                     </select>
                 </td>
+
                 <td class="text-center">
                     <input name="Detalles[${indiceDetalle}].CantidadDetalleFactura"
                            type="number"
@@ -189,15 +252,17 @@
                            data-decimal-positivo="true"
                            required />
                 </td>
+
                 <td class="text-right">
                     <input name="Detalles[${indiceDetalle}].PrecioUnitarioDetalleFactura"
                            type="number"
                            value="0.00"
                            step="0.01"
-                           min="0.01"
+                           min="0.00"
                            readonly
                            required />
                 </td>
+
                 <td class="text-right">
                     <button class="action-btn" type="button" onclick="eliminarFila(this)">Quitar</button>
                 </td>
@@ -217,12 +282,6 @@
 
             boton.closest("tr").remove();
         }
-
-        document.addEventListener("DOMContentLoaded", function () {
-            document.querySelectorAll("#tablaDetalle select").forEach(function (select) {
-                actualizarPrecio(select);
-            });
-        });
     </script>
 
     <partial name="_ValidationScriptsPartial" />
