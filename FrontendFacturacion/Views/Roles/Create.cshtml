@@ -1,0 +1,34 @@
+﻿@model FrontendFacturacion.Services.RolDto
+
+@{
+    ViewData["Title"] = "Crear Rol";
+}
+
+<div class="page-title">
+    <div>
+        <h2>Crear Rol</h2>
+        <p>Formulario para registrar roles del sistema.</p>
+    </div>
+
+    <a asp-controller="Roles" asp-action="Index" class="btn btn-outline">Regresar</a>
+</div>
+
+<div class="form-card">
+    <form asp-controller="Roles" asp-action="Create" method="post">
+        <div class="form-section">
+            <h3>Datos del rol</h3>
+
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label>Nombre del rol</label>
+                    <input asp-for="NombreRol" type="text" placeholder="Ejemplo: Administrador" required />
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <a asp-controller="Roles" asp-action="Index" class="btn btn-outline">Cancelar</a>
+            <button class="btn btn-primary" type="submit">Guardar rol</button>
+        </div>
+    </form>
+</div>

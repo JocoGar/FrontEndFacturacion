@@ -1,0 +1,22 @@
+[
+  {
+    "dpiUsuario": "2948302910101",
+    "nombreUsuario": "Carlos Arturo",
+    "apellidoUsuario": "Méndez López",
+    "correoUsuario": "carlos@empresa.com",
+    "idRol": 1,
+    "nombreRol": "Administrador",
+    "fechaCreacionUsuario": "2026-05-01",
+    "fechaActualizacionUsuario": "2026-05-06"
+  },
+  {
+    "dpiUsuario": "1029485760101",
+    "nombreUsuario": "María Elena",
+    "apellidoUsuario": "Gómez Ruiz",
+    "correoUsuario": "maria@empresa.com",
+    "idRol": 2,
+    "nombreRol": "Vendedor",
+    "fechaCreacionUsuario": "2026-05-02",
+    "fechaActualizacionUsuario": "2026-05-06"
+  }
+]

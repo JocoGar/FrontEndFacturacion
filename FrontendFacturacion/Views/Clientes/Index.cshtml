@@ -10,13 +10,18 @@
         <p>Registro y administración de clientes.</p>
     </div>
 
-    <button class="btn btn-primary">Registrar cliente</button>
+    <a asp-controller="Clientes" asp-action="Create" class="btn btn-primary">Registrar cliente</a>
 </div>
 
 <div class="table-card">
     <div class="table-header">
         <h3>Listado de clientes</h3>
-        <input type="text" placeholder="Buscar por DPI..." />
+
+        <form method="get" class="search-form">
+            <input type="text" name="buscar" value="@ViewBag.Buscar" placeholder="Buscar por DPI, nombre o correo..." />
+            <button class="btn btn-outline" type="submit">Buscar</button>
+            <a asp-action="Index" class="btn btn-outline">Limpiar</a>
+        </form>
     </div>
 
     <table>
@@ -27,6 +32,7 @@
                 <th>Apellido</th>
                 <th>Correo</th>
                 <th>Teléfono</th>
+                <th>Fecha creación</th>
                 <th class="text-right">Acciones</th>
             </tr>
         </thead>
@@ -39,10 +45,14 @@
                     <td>@cliente.ApellidoCliente</td>
                     <td>@cliente.CorreoCliente</td>
                     <td>@cliente.TelefonoCliente</td>
+                    <td>@cliente.FechaCreacionCliente.ToString("dd/MM/yyyy")</td>
                     <td>
                         <div class="actions">
-                            <button class="action-btn">Editar</button>
-                            <button class="action-btn">Eliminar</button>
+                            <a asp-controller="Clientes" asp-action="Edit" asp-route-id="@cliente.DpiCliente" class="action-btn">Editar</a>
+
+                            <form asp-controller="Clientes" asp-action="Delete" asp-route-id="@cliente.DpiCliente" method="post" class="inline-form">
+                                <button class="action-btn" type="submit" onclick="return confirm('¿Eliminar cliente?')">Eliminar</button>
+                            </form>
                         </div>
                     </td>
                 </tr>

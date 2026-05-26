@@ -1,0 +1,50 @@
+{
+  "factura": {
+    "idFactura": 3,
+    "dpiClienteFactura": "3210654870301",
+    "nombreCliente": "Roberto Antonio",
+    "apellidoCliente": "García Méndez",
+    "dpiUsuarioFactura": "2948302910101",
+    "nombreUsuario": "Carlos Arturo",
+    "apellidoUsuario": "Méndez López",
+    "numeroFactura": "F-003",
+    "fechaEmisionFactura": "2026-05-05T09:15:00",
+    "fechaVencimientoFactura": "2026-05-06",
+    "estadoFactura": "VENCIDA",
+    "subtotalFactura": 300.00,
+    "totalFactura": 300.00,
+    "monedaFactura": "GTQ",
+    "fechaCreacionFactura": "2026-05-05",
+    "fechaActualizacionFactura": "2026-05-06"
+  },
+  "cliente": {
+    "dpiCliente": "3210654870301",
+    "nombreCliente": "Roberto Antonio",
+    "apellidoCliente": "García Méndez",
+    "correoCliente": "roberto@empresa.com",
+    "telefonoCliente": "3333-5678",
+    "fechaCreacionCliente": "2026-05-03",
+    "fechaActualizacionCliente": "2026-05-06"
+  },
+  "usuario": {
+    "dpiUsuario": "2948302910101",
+    "nombreUsuario": "Carlos Arturo",
+    "apellidoUsuario": "Méndez López",
+    "correoUsuario": "carlos@empresa.com",
+    "idRol": 1,
+    "nombreRol": "Administrador",
+    "fechaCreacionUsuario": "2026-05-01",
+    "fechaActualizacionUsuario": "2026-05-06"
+  },
+  "detalles": [
+    {
+      "idDetalleFactura": 5,
+      "idFacturaDetalleFactura": 3,
+      "codigoProductoDetalleFactura": "SOF-001",
+      "nombreProducto": "Licencia de software administrativo",
+      "cantidadDetalleFactura": 1,
+      "precioUnitarioDetalleFactura": 300.00
+    }
+  ],
+  "pagos": []
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "IdProducto": 1,
+    "CodigoProducto": "SRV-001",
+    "IdCategoriaProducto": 1,
+    "NombreCategoriaProducto": "Servicios IT",
+    "NombreProducto": "Servicio de soporte t\u00E9cnico",
+    "DescripcionProducto": "Atenci\u00F3n t\u00E9cnica y mantenimiento preventivo.",
+    "PrecioUnitarioProducto": 150.00,
+    "PrecioCostoProducto": 80.00,
+    "FechaCreacionProducto": "2026-05-01T00:00:00",
+    "FechaActualizacionProducto": "2026-05-06T00:00:00"
+  },
+  {
+    "IdProducto": 3,
+    "CodigoProducto": "IMP-001",
+    "IdCategoriaProducto": 3,
+    "NombreCategoriaProducto": "Implementaci\u00F3n",
+    "NombreProducto": "Implementaci\u00F3n de sistema",
+    "DescripcionProducto": "Configuraci\u00F3n inicial y capacitaci\u00F3n b\u00E1sica.",
+    "PrecioUnitarioProducto": 500.00,
+    "PrecioCostoProducto": 250.00,
+    "FechaCreacionProducto": "2026-05-02T00:00:00",
+    "FechaActualizacionProducto": "2026-05-06T00:00:00"
+  }
+]

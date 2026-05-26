@@ -1,0 +1,72 @@
+﻿@using FrontendFacturacion.Services
+@model FrontendFacturacion.Services.ProductoDto
+
+@{
+    ViewData["Title"] = "Nuevo Producto o Servicio";
+    var categorias = ViewBag.Categorias as List<CategoriaDto> ?? new();
+}
+
+<div class="page-title">
+    <div>
+        <h2>Nuevo Producto o Servicio</h2>
+        <p>Formulario para registrar productos o servicios facturables.</p>
+    </div>
+
+    <a asp-controller="Productos" asp-action="Index" class="btn btn-outline">Regresar</a>
+</div>
+
+<div class="form-card">
+    <form asp-controller="Productos" asp-action="Create" method="post">
+        <div class="form-section">
+            <h3>Datos del producto o servicio</h3>
+
+            <div class="grid grid-3">
+                <div class="form-group">
+                    <label>Código</label>
+                    <input asp-for="CodigoProducto" type="text" placeholder="Ejemplo: SRV-001" required />
+                </div>
+
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input asp-for="NombreProducto" type="text" placeholder="Nombre del producto o servicio" required />
+                </div>
+
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <select asp-for="IdCategoriaProducto" required>
+                        <option value="">Seleccione una categoría</option>
+                        @foreach (var categoria in categorias)
+                        {
+                            <option value="@categoria.IdCategoriaProducto">@categoria.NombreCategoriaProducto</option>
+                        }
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Precio unitario</label>
+                    <input asp-for="PrecioUnitarioProducto" type="number" step="0.01" min="0" placeholder="0.00" required />
+                </div>
+
+                <div class="form-group">
+                    <label>Precio costo</label>
+                    <input asp-for="PrecioCostoProducto" type="number" step="0.01" min="0" placeholder="0.00" required />
+                </div>
+
+                <div class="form-group">
+                    <label>Fecha de creación</label>
+                    <input asp-for="FechaCreacionProducto" type="date" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                </div>
+
+                <div class="form-group" style="grid-column: 1 / -1;">
+                    <label>Descripción</label>
+                    <textarea asp-for="DescripcionProducto" placeholder="Descripción del producto o servicio"></textarea>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <a asp-controller="Productos" asp-action="Index" class="btn btn-outline">Cancelar</a>
+            <button class="btn btn-primary" type="submit">Guardar producto/servicio</button>
+        </div>
+    </form>
+</div>

@@ -4,40 +4,86 @@
     var hostname = ViewData["Hostname"]?.ToString() ?? Environment.MachineName;
     var fechaServidor = ViewData["FechaServidor"]?.ToString() ?? DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
     var apiDisponible = ViewData["ApiDisponible"] as bool? ?? false;
+    var fuenteDatos = ViewBag.FuenteDatos as FrontendFacturacion.Services.FuenteDatosDto;
 }
 
 <div class="page-title">
     <div>
         <h2>Estado del servidor</h2>
-        <p>Información del nodo frontend que está respondiendo la petición.</p>
+        <p>Información del nodo frontend, fuente de datos y estado de comunicación externa.</p>
     </div>
 </div>
 
+<div class="grid grid-3">
+    <div class="card">
+        <div class="stat-title">Nodo frontend</div>
+        <div class="stat-number" style="font-size: 22px;">@hostname</div>
+        <div class="stat-note">Servidor que respondió la petición</div>
+    </div>
+
+    <div class="card">
+        <div class="stat-title">Aplicación</div>
+        <div class="stat-number" style="font-size: 22px;">
+            <span class="badge badge-green">Activa</span>
+        </div>
+        <div class="stat-note">Frontend ASP.NET Core MVC</div>
+    </div>
+
+    <div class="card">
+        <div class="stat-title">Fuente de datos</div>
+        <div class="stat-number" style="font-size: 22px;">
+            @if (apiDisponible)
+            {
+                <span class="badge badge-green">API Dummy externa</span>
+            }
+            else
+            {
+                <span class="badge badge-yellow">Mocks JSON locales</span>
+            }
+        </div>
+        <div class="stat-note">Origen actual de la información</div>
+    </div>
+</div>
+
+<br />
+
 <div class="card">
-    <h3>Información del nodo frontend</h3>
+    <h3>Detalle técnico</h3>
 
     <div class="server-box">
         <strong>Hostname:</strong>
         <span class="badge badge-blue">@hostname</span>
 
-        <strong>Estado de la aplicación:</strong>
+        <strong>Fecha del servidor:</strong>
+        <span>@fechaServidor</span>
+
+        <strong>Estado de aplicación:</strong>
         <span class="badge badge-green">Activa</span>
 
-        <strong>Estado de la API:</strong>
+        <strong>Estado de API:</strong>
         @if (apiDisponible)
         {
             <span class="badge badge-green">Disponible</span>
         }
         else
         {
-            <span class="badge badge-yellow">No disponible / usando demo</span>
+            <span class="badge badge-yellow">No disponible / usando fallback</span>
         }
 
-        <strong>Fecha del servidor:</strong>
-        <span>@fechaServidor</span>
+        <strong>Origen de datos:</strong>
+        <span>@(fuenteDatos?.Origen ?? "No determinado")</span>
+
+        <strong>Nombre de fuente:</strong>
+        <span>@(fuenteDatos?.NombreApi ?? "No determinado")</span>
 
         <strong>Ambiente:</strong>
-        <span>Producción</span>
+        <span>@(fuenteDatos?.Ambiente ?? "No determinado")</span>
+
+        <strong>Mensaje:</strong>
+        <span>@(fuenteDatos?.Mensaje ?? "Sin mensaje")</span>
+
+        <strong>Última respuesta:</strong>
+        <span>@(fuenteDatos?.FechaRespuesta ?? "Sin registro")</span>
     </div>
 </div>
 
@@ -45,8 +91,8 @@
 
 <div class="card">
     <p>
-        Esta pantalla permite demostrar qué nodo del frontend está atendiendo la solicitud.
-        Al refrescar la página desde la IP virtual o desde el balanceador, se puede validar
-        el comportamiento del clúster y del balanceo de carga.
+        Esta pantalla permite demostrar qué nodo frontend atiende la solicitud y si la información
+        proviene de una API externa dummy o de mocks JSON locales. Al acceder por la IP virtual o el
+        balanceador, el hostname permite validar el comportamiento del clúster y del balanceo de carga.
     </p>
 </div>

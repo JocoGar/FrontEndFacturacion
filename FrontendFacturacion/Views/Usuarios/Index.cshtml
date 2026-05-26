@@ -10,13 +10,18 @@
         <p>Administración de accesos del sistema.</p>
     </div>
 
-    <button class="btn btn-primary">Crear usuario</button>
+    <a asp-controller="Usuarios" asp-action="Create" class="btn btn-primary">Crear usuario</a>
 </div>
 
 <div class="table-card">
     <div class="table-header">
         <h3>Listado de usuarios</h3>
-        <input type="text" placeholder="Buscar usuario..." />
+
+        <form method="get" class="search-form">
+            <input type="text" name="buscar" value="@ViewBag.Buscar" placeholder="Buscar por DPI, nombre, correo o rol..." />
+            <button class="btn btn-outline" type="submit">Buscar</button>
+            <a asp-action="Index" class="btn btn-outline">Limpiar</a>
+        </form>
     </div>
 
     <table>
@@ -27,6 +32,7 @@
                 <th>Apellido</th>
                 <th>Correo</th>
                 <th>Rol</th>
+                <th>Fecha creación</th>
                 <th class="text-right">Acciones</th>
             </tr>
         </thead>
@@ -38,11 +44,15 @@
                     <td>@usuario.NombreUsuario</td>
                     <td>@usuario.ApellidoUsuario</td>
                     <td>@usuario.CorreoUsuario</td>
-                    <td><span class="badge badge-blue">@usuario.Rol</span></td>
+                    <td><span class="badge badge-blue">@usuario.NombreRol</span></td>
+                    <td>@usuario.FechaCreacionUsuario.ToString("dd/MM/yyyy")</td>
                     <td>
                         <div class="actions">
-                            <button class="action-btn">Editar</button>
-                            <button class="action-btn">Rol</button>
+                            <a asp-controller="Usuarios" asp-action="Edit" asp-route-id="@usuario.DpiUsuario" class="action-btn">Editar</a>
+
+                            <form asp-controller="Usuarios" asp-action="Delete" asp-route-id="@usuario.DpiUsuario" method="post" class="inline-form">
+                                <button class="action-btn" type="submit" onclick="return confirm('¿Eliminar usuario?')">Eliminar</button>
+                            </form>
                         </div>
                     </td>
                 </tr>

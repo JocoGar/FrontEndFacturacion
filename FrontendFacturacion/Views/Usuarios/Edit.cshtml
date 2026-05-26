@@ -1,0 +1,61 @@
+﻿@using FrontendFacturacion.Services
+@model FrontendFacturacion.Services.UsuarioDto
+
+@{
+    ViewData["Title"] = "Editar Usuario";
+    var roles = ViewBag.Roles as List<RolDto> ?? new();
+}
+
+<div class="page-title">
+    <div>
+        <h2>Editar Usuario</h2>
+        <p>Modificación de datos del usuario.</p>
+    </div>
+
+    <a asp-controller="Usuarios" asp-action="Index" class="btn btn-outline">Regresar</a>
+</div>
+
+<div class="form-card">
+    <form asp-action="Edit" asp-route-id="@Model.DpiUsuario" method="post">
+        <div class="form-section">
+            <h3>Datos del usuario</h3>
+
+            <div class="grid grid-3">
+                <div class="form-group">
+                    <label>DPI</label>
+                    <input asp-for="DpiUsuario" readonly />
+                </div>
+
+                <div class="form-group">
+                    <label>Nombre</label>
+                    <input asp-for="NombreUsuario" />
+                </div>
+
+                <div class="form-group">
+                    <label>Apellido</label>
+                    <input asp-for="ApellidoUsuario" />
+                </div>
+
+                <div class="form-group">
+                    <label>Correo</label>
+                    <input asp-for="CorreoUsuario" type="email" />
+                </div>
+
+                <div class="form-group">
+                    <label>Rol</label>
+                    <select asp-for="IdRol">
+                        @foreach (var rol in roles)
+                        {
+                            <option value="@rol.IdRol">@rol.NombreRol</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="actions">
+            <a asp-controller="Usuarios" asp-action="Index" class="btn btn-outline">Cancelar</a>
+            <button class="btn btn-primary" type="submit">Guardar cambios</button>
+        </div>
+    </form>
+</div>

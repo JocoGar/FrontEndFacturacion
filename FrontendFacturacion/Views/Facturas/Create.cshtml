@@ -1,4 +1,5 @@
 ﻿@using FrontendFacturacion.Services
+@model FrontendFacturacion.Services.FacturaCrearViewModel
 
 @{
     ViewData["Title"] = "Nueva Factura";
@@ -11,128 +12,163 @@
 <div class="page-title">
     <div>
         <h2>Crear Nueva Factura</h2>
-        <p>Complete los datos generales y el detalle de productos.</p>
+        <p>Complete los datos generales y el detalle de productos o servicios.</p>
     </div>
 
     <a asp-controller="Facturas" asp-action="Index" class="btn btn-outline">Regresar</a>
 </div>
 
 <div class="form-card">
-    <div class="form-section">
-        <h3>1. Datos generales</h3>
+    <form asp-controller="Facturas" asp-action="Create" method="post">
+        <div class="form-section">
+            <h3>1. Datos generales</h3>
 
-        <div class="grid grid-3">
-            <div class="form-group">
-                <label>Cliente</label>
-                <select>
-                    <option>Seleccione un cliente</option>
-                    @foreach (var cliente in clientes)
-                    {
-                        <option value="@cliente.DpiCliente">@cliente.NombreCliente @cliente.ApellidoCliente</option>
-                    }
-                </select>
-            </div>
+            <div class="grid grid-3">
+                <div class="form-group">
+                    <label>Cliente</label>
+                    <select asp-for="DpiClienteFactura" required>
+                        <option value="">Seleccione un cliente</option>
+                        @foreach (var cliente in clientes)
+                        {
+                            <option value="@cliente.DpiCliente">@cliente.NombreCliente @cliente.ApellidoCliente</option>
+                        }
+                    </select>
+                </div>
 
-            <div class="form-group">
-                <label>Usuario vendedor</label>
-                <select>
-                    @foreach (var usuario in usuarios)
-                    {
-                        <option value="@usuario.DpiUsuario">@usuario.NombreUsuario @usuario.ApellidoUsuario</option>
-                    }
-                </select>
-            </div>
+                <div class="form-group">
+                    <label>Usuario vendedor</label>
+                    <select asp-for="DpiUsuarioFactura" required>
+                        <option value="">Seleccione un usuario</option>
+                        @foreach (var usuario in usuarios)
+                        {
+                            <option value="@usuario.DpiUsuario">@usuario.NombreUsuario @usuario.ApellidoUsuario</option>
+                        }
+                    </select>
+                </div>
 
-            <div class="form-group">
-                <label>Moneda</label>
-                <select>
-                    <option>GTQ</option>
-                    <option>USD</option>
-                </select>
-            </div>
+                <div class="form-group">
+                    <label>Número de factura</label>
+                    <input asp-for="NumeroFactura" value="F-004" required />
+                </div>
 
-            <div class="form-group">
-                <label>Fecha de emisión</label>
-                <input type="date" value="@DateTime.Now.ToString("yyyy-MM-dd")" />
-            </div>
+                <div class="form-group">
+                    <label>Moneda</label>
+                    <select asp-for="MonedaFactura">
+                        <option>GTQ</option>
+                        <option>USD</option>
+                    </select>
+                </div>
 
-            <div class="form-group">
-                <label>Fecha de vencimiento</label>
-                <input type="date" />
-            </div>
+                <div class="form-group">
+                    <label>Fecha de emisión</label>
+                    <input asp-for="FechaEmisionFactura" type="datetime-local" value="@DateTime.Now.ToString("yyyy-MM-ddTHH:mm")" required />
+                </div>
 
-            <div class="form-group">
-                <label>Estado</label>
-                <select>
-                    <option>PENDIENTE</option>
-                    <option>PAGADA</option>
-                </select>
+                <div class="form-group">
+                    <label>Fecha de vencimiento</label>
+                    <input asp-for="FechaVencimientoFactura" type="date" />
+                </div>
+
+                <div class="form-group">
+                    <label>Estado</label>
+                    <select asp-for="EstadoFactura">
+                        <option>PENDIENTE</option>
+                        <option>PAGADA</option>
+                    </select>
+                </div>
             </div>
         </div>
-    </div>
 
-    <div class="form-section">
-        <h3>2. Detalle de productos</h3>
+        <div class="form-section">
+            <h3>2. Detalle de productos o servicios</h3>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th class="text-center">Cantidad</th>
-                    <th class="text-right">Precio unitario</th>
-                    <th class="text-right">Subtotal</th>
-                    <th class="text-right">Acción</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr>
-                    <td>
-                        <select>
-                            @foreach (var producto in productos)
-                            {
-                                <option value="@producto.CodigoProducto">
-                                    @producto.CodigoProducto - @producto.NombreProducto
-                                </option>
-                            }
-                        </select>
-                    </td>
-                    <td class="text-center">
-                        <input type="number" value="1" />
-                    </td>
-                    <td class="text-right">
-                        <input type="number" value="150.00" />
-                    </td>
-                    <td class="text-right">Q150.00</td>
-                    <td class="text-right">
-                        <button class="action-btn">Quitar</button>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+            <table id="tablaDetalle">
+                <thead>
+                    <tr>
+                        <th>Producto / Servicio</th>
+                        <th class="text-center">Cantidad</th>
+                        <th class="text-right">Precio unitario</th>
+                        <th class="text-right">Acción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>
+                            <select name="Detalles[0].CodigoProductoDetalleFactura" required>
+                                <option value="">Seleccione</option>
+                                @foreach (var producto in productos)
+                                {
+                                    <option value="@producto.CodigoProducto">@producto.CodigoProducto - @producto.NombreProducto</option>
+                                }
+                            </select>
+                        </td>
+                        <td class="text-center">
+                            <input name="Detalles[0].CantidadDetalleFactura" type="number" value="1" min="1" required />
+                        </td>
+                        <td class="text-right">
+                            <input name="Detalles[0].PrecioUnitarioDetalleFactura" type="number" value="150.00" step="0.01" min="0" required />
+                        </td>
+                        <td class="text-right">
+                            <button class="action-btn" type="button" onclick="eliminarFila(this)">Quitar</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
 
-        <br />
-        <button class="btn btn-outline">Agregar producto</button>
-    </div>
-
-    <div class="summary-box">
-        <div class="summary-row">
-            <span>Subtotal</span>
-            <span>Q150.00</span>
+            <br />
+            <button class="btn btn-outline" type="button" onclick="agregarFila()">Agregar producto/servicio</button>
         </div>
-        <div class="summary-row">
-            <span>Descuento</span>
-            <span>Q0.00</span>
-        </div>
-        <div class="summary-row summary-total">
-            <span>Total</span>
-            <span>Q150.00</span>
-        </div>
-    </div>
 
-    <br />
-
-    <div class="actions">
-        <a asp-controller="Facturas" asp-action="Index" class="btn btn-outline">Cancelar</a>
-        <button class="btn btn-primary">Guardar factura</button>
-    </div>
+        <div class="actions">
+            <a asp-controller="Facturas" asp-action="Index" class="btn btn-outline">Cancelar</a>
+            <button class="btn btn-primary" type="submit">Guardar factura</button>
+        </div>
+    </form>
 </div>
+
+@section Scripts {
+    <script>
+        let indiceDetalle = 1;
+
+        function agregarFila() {
+            const tbody = document.querySelector("#tablaDetalle tbody");
+
+            const fila = document.createElement("tr");
+
+            fila.innerHTML = `
+                <td>
+                    <select name="Detalles[${indiceDetalle}].CodigoProductoDetalleFactura" required>
+                        <option value="">Seleccione</option>
+                        @foreach (var producto in productos)
+                        {
+                                <option value="@producto.CodigoProducto">@producto.CodigoProducto - @producto.NombreProducto</option>
+                        }
+                    </select>
+                </td>
+                <td class="text-center">
+                    <input name="Detalles[${indiceDetalle}].CantidadDetalleFactura" type="number" value="1" min="1" required />
+                </td>
+                <td class="text-right">
+                    <input name="Detalles[${indiceDetalle}].PrecioUnitarioDetalleFactura" type="number" value="150.00" step="0.01" min="0" required />
+                </td>
+                <td class="text-right">
+                    <button class="action-btn" type="button" onclick="eliminarFila(this)">Quitar</button>
+                </td>
+            `;
+
+            tbody.appendChild(fila);
+            indiceDetalle++;
+        }
+
+        function eliminarFila(boton) {
+            const filas = document.querySelectorAll("#tablaDetalle tbody tr");
+
+            if (filas.length <= 1) {
+                alert("La factura debe tener al menos un producto o servicio.");
+                return;
+            }
+
+            boton.closest("tr").remove();
+        }
+    </script>
+}

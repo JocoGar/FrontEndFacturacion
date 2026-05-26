@@ -1,0 +1,14 @@
+[
+  {
+    "idRol": 1,
+    "nombreRol": "Administrador"
+  },
+  {
+    "idRol": 2,
+    "nombreRol": "Vendedor"
+  },
+  {
+    "idRol": 3,
+    "nombreRol": "Consulta"
+  }
+]
