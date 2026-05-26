@@ -55,8 +55,10 @@
                     <input asp-for="MontoPago"
                            type="number"
                            value="@Model.MontoPago.ToString("0.00", CultureInfo.InvariantCulture)"
-                           step="0.01"
-                           min="0.01"
+                           step="any"
+                           min="0"
+                           inputmode="decimal"
+                           lang="en-US"
                            data-decimal-positivo="true"
                            required />
                     <span asp-validation-for="MontoPago" class="text-danger"></span>

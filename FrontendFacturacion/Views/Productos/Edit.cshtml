@@ -65,8 +65,10 @@
                     <input asp-for="PrecioUnitarioProducto"
                            type="number"
                            value="@Model.PrecioUnitarioProducto.ToString("0.00", CultureInfo.InvariantCulture)"
-                           step="0.01"
-                           min="0.01"
+                           step="any"
+                           min="0"
+                           inputmode="decimal"
+                           lang="en-US"
                            data-decimal-positivo="true"
                            required />
                     <span asp-validation-for="PrecioUnitarioProducto" class="text-danger"></span>
