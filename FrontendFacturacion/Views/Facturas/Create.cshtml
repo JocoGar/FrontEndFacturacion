@@ -1,4 +1,5 @@
 ﻿@using FrontendFacturacion.Services
+@using System.Globalization
 @model FrontendFacturacion.Services.FacturaCrearViewModel
 
 @{
@@ -7,6 +8,8 @@
     var clientes = ViewBag.Clientes as List<ClienteDto> ?? new();
     var productos = ViewBag.Productos as List<ProductoDto> ?? new();
     var usuarios = ViewBag.Usuarios as List<UsuarioDto> ?? new();
+
+    var numeroFacturaInterno = $"F-{DateTime.Now:yyyyMMddHHmmss}";
 }
 
 <div class="page-title">
@@ -20,6 +23,8 @@
 
 <div class="form-card">
     <form asp-controller="Facturas" asp-action="Create" method="post">
+        <input asp-for="NumeroFactura" type="hidden" value="@numeroFacturaInterno" />
+
         <div class="form-section">
             <h3>1. Datos generales</h3>
 
@@ -30,7 +35,9 @@
                         <option value="">Seleccione un cliente</option>
                         @foreach (var cliente in clientes)
                         {
-                            <option value="@cliente.IdCliente">@cliente.IdCliente - @cliente.NombreCliente @cliente.ApellidoCliente - NIT: @cliente.NitCliente</option>
+                            <option value="@cliente.IdCliente">
+                                @cliente.IdCliente - @cliente.NombreCliente @cliente.ApellidoCliente - NIT: @cliente.NitCliente
+                            </option>
                         }
                     </select>
                 </div>
@@ -41,14 +48,11 @@
                         <option value="">Seleccione un usuario</option>
                         @foreach (var usuario in usuarios)
                         {
-                            <option value="@usuario.DpiUsuario">@usuario.NombreUsuario @usuario.ApellidoUsuario</option>
+                            <option value="@usuario.DpiUsuario">
+                                @usuario.NombreUsuario @usuario.ApellidoUsuario
+                            </option>
                         }
                     </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Número de factura</label>
-                    <input asp-for="NumeroFactura" value="F-004" required />
                 </div>
 
                 <div class="form-group">
@@ -62,6 +66,11 @@
                 <div class="form-group">
                     <label>Fecha de emisión</label>
                     <input asp-for="FechaEmisionFactura" type="date" value="@DateTime.Now.ToString("yyyy-MM-dd")" required />
+                </div>
+
+                <div class="form-group">
+                    <label>Número de factura</label>
+                    <input type="text" value="Generado automáticamente por la API" readonly />
                 </div>
             </div>
         </div>
@@ -81,11 +90,14 @@
                 <tbody>
                     <tr>
                         <td>
-                            <select name="Detalles[0].CodigoProductoDetalleFactura" required>
-                                <option value="">Seleccione</option>
+                            <select name="Detalles[0].CodigoProductoDetalleFactura" onchange="actualizarPrecio(this)" required>
+                                <option value="" data-precio="0.00">Seleccione</option>
                                 @foreach (var producto in productos)
                                 {
-                                    <option value="@producto.CodigoProducto">@producto.CodigoProducto - @producto.NombreProducto</option>
+                                    <option value="@producto.CodigoProducto"
+                                            data-precio="@producto.PrecioUnitarioProducto.ToString("0.00", CultureInfo.InvariantCulture)">
+                                        @producto.CodigoProducto - @producto.NombreProducto
+                                    </option>
                                 }
                             </select>
                         </td>
@@ -93,7 +105,13 @@
                             <input name="Detalles[0].CantidadDetalleFactura" type="number" value="1" min="1" step="0.01" required />
                         </td>
                         <td class="text-right">
-                            <input name="Detalles[0].PrecioUnitarioDetalleFactura" type="number" value="150.00" step="0.01" min="0" required />
+                            <input name="Detalles[0].PrecioUnitarioDetalleFactura"
+                                   type="number"
+                                   value="0.00"
+                                   step="0.01"
+                                   min="0"
+                                   readonly
+                                   required />
                         </td>
                         <td class="text-right">
                             <button class="action-btn" type="button" onclick="eliminarFila(this)">Quitar</button>
@@ -117,18 +135,32 @@
     <script>
         let indiceDetalle = 1;
 
+        function actualizarPrecio(selectProducto) {
+            const opcionSeleccionada = selectProducto.options[selectProducto.selectedIndex];
+            const precio = opcionSeleccionada.getAttribute("data-precio") || "0.00";
+
+            const fila = selectProducto.closest("tr");
+            const inputPrecio = fila.querySelector("input[name$='.PrecioUnitarioDetalleFactura']");
+
+            if (inputPrecio) {
+                inputPrecio.value = parseFloat(precio).toFixed(2);
+            }
+        }
+
         function agregarFila() {
             const tbody = document.querySelector("#tablaDetalle tbody");
-
             const fila = document.createElement("tr");
 
             fila.innerHTML = `
                 <td>
-                    <select name="Detalles[${indiceDetalle}].CodigoProductoDetalleFactura" required>
-                        <option value="">Seleccione</option>
+                    <select name="Detalles[${indiceDetalle}].CodigoProductoDetalleFactura" onchange="actualizarPrecio(this)" required>
+                        <option value="" data-precio="0.00">Seleccione</option>
                         @foreach (var producto in productos)
                         {
-                                    <option value="@producto.CodigoProducto">@producto.CodigoProducto - @producto.NombreProducto</option>
+                                <option value="@producto.CodigoProducto"
+                                        data-precio="@producto.PrecioUnitarioProducto.ToString("0.00", CultureInfo.InvariantCulture)">
+                                    @producto.CodigoProducto - @producto.NombreProducto
+                                </option>
                         }
                     </select>
                 </td>
@@ -136,7 +168,13 @@
                     <input name="Detalles[${indiceDetalle}].CantidadDetalleFactura" type="number" value="1" min="1" step="0.01" required />
                 </td>
                 <td class="text-right">
-                    <input name="Detalles[${indiceDetalle}].PrecioUnitarioDetalleFactura" type="number" value="150.00" step="0.01" min="0" required />
+                    <input name="Detalles[${indiceDetalle}].PrecioUnitarioDetalleFactura"
+                           type="number"
+                           value="0.00"
+                           step="0.01"
+                           min="0"
+                           readonly
+                           required />
                 </td>
                 <td class="text-right">
                     <button class="action-btn" type="button" onclick="eliminarFila(this)">Quitar</button>
@@ -157,5 +195,11 @@
 
             boton.closest("tr").remove();
         }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll("#tablaDetalle select").forEach(function (select) {
+                actualizarPrecio(select);
+            });
+        });
     </script>
 }
