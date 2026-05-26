@@ -13,6 +13,8 @@
     <a asp-controller="Categorias" asp-action="Index" class="btn btn-outline">Regresar</a>
 </div>
 
+<partial name="_FormFeedback" />
+
 <div class="form-card">
     <form asp-controller="Categorias" asp-action="Create" method="post">
         <div class="form-section">
@@ -21,12 +23,20 @@
             <div class="grid grid-2">
                 <div class="form-group">
                     <label>Nombre de categoría</label>
-                    <input asp-for="NombreCategoriaProducto" type="text" placeholder="Ejemplo: Servicios IT" required />
+                    <input asp-for="NombreCategoriaProducto"
+                           type="text"
+                           maxlength="100"
+                           placeholder="Ejemplo: Servicios IT"
+                           required />
+                    <span asp-validation-for="NombreCategoriaProducto" class="text-danger"></span>
                 </div>
 
                 <div class="form-group" style="grid-column: 1 / -1;">
                     <label>Descripción</label>
-                    <textarea asp-for="DescripcionCategoriaProducto" placeholder="Descripción de la categoría"></textarea>
+                    <textarea asp-for="DescripcionCategoriaProducto"
+                              maxlength="200"
+                              placeholder="Descripción de la categoría"></textarea>
+                    <span asp-validation-for="DescripcionCategoriaProducto" class="text-danger"></span>
                 </div>
             </div>
         </div>
@@ -37,3 +47,7 @@
         </div>
     </form>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

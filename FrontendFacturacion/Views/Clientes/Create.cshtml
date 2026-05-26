@@ -13,6 +13,8 @@
     <a asp-controller="Clientes" asp-action="Index" class="btn btn-outline">Regresar</a>
 </div>
 
+<partial name="_FormFeedback" />
+
 <div class="form-card">
     <form asp-controller="Clientes" asp-action="Create" method="post">
         <div class="form-section">
@@ -21,32 +23,68 @@
             <div class="grid grid-3">
                 <div class="form-group">
                     <label>DPI</label>
-                    <input asp-for="DpiCliente" type="text" maxlength="13" placeholder="Ejemplo: 2548963210101" required />
+                    <input asp-for="DpiCliente"
+                           type="text"
+                           maxlength="13"
+                           inputmode="numeric"
+                           data-solo-numeros="true"
+                           placeholder="Ejemplo: 2548963210101"
+                           required />
+                    <span asp-validation-for="DpiCliente" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
                     <label>NIT</label>
-                    <input asp-for="NitCliente" type="text" maxlength="20" placeholder="Ejemplo: 1234567-8" required />
+                    <input asp-for="NitCliente"
+                           type="text"
+                           maxlength="9"
+                           inputmode="numeric"
+                           data-solo-numeros="true"
+                           placeholder="Ejemplo: 123456789"
+                           required />
+                    <span asp-validation-for="NitCliente" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
                     <label>Nombre</label>
-                    <input asp-for="NombreCliente" type="text" placeholder="Nombre del cliente" required />
+                    <input asp-for="NombreCliente"
+                           type="text"
+                           maxlength="50"
+                           data-solo-letras="true"
+                           placeholder="Nombre del cliente"
+                           required />
+                    <span asp-validation-for="NombreCliente" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
                     <label>Apellido</label>
-                    <input asp-for="ApellidoCliente" type="text" placeholder="Apellido del cliente" required />
+                    <input asp-for="ApellidoCliente"
+                           type="text"
+                           maxlength="100"
+                           data-solo-letras="true"
+                           placeholder="Apellido del cliente"
+                           required />
+                    <span asp-validation-for="ApellidoCliente" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
                     <label>Correo</label>
-                    <input asp-for="CorreoCliente" type="email" placeholder="cliente@correo.com" />
+                    <input asp-for="CorreoCliente"
+                           type="email"
+                           maxlength="150"
+                           placeholder="cliente@correo.com" />
+                    <span asp-validation-for="CorreoCliente" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
                     <label>Teléfono</label>
-                    <input asp-for="TelefonoCliente" type="text" placeholder="5555-1234" />
+                    <input asp-for="TelefonoCliente"
+                           type="text"
+                           maxlength="20"
+                           inputmode="numeric"
+                           data-solo-numeros="true"
+                           placeholder="55551234" />
+                    <span asp-validation-for="TelefonoCliente" class="text-danger"></span>
                 </div>
             </div>
         </div>
@@ -57,3 +95,7 @@
         </div>
     </form>
 </div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

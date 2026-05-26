@@ -16,6 +16,11 @@ namespace FrontendFacturacion.Controllers
         {
             var usuarios = await _api.ObtenerUsuariosAsync();
 
+            ViewBag.ApiError = TempData["ApiError"] as string;
+
+            if (string.IsNullOrWhiteSpace(ViewBag.ApiError as string))
+                ViewBag.ApiError = _api.UltimoErrorApi;
+
             if (!string.IsNullOrWhiteSpace(buscar))
             {
                 usuarios = usuarios
@@ -35,13 +40,35 @@ namespace FrontendFacturacion.Controllers
         public async Task<IActionResult> Create()
         {
             ViewBag.Roles = await _api.ObtenerRolesAsync();
+            ViewBag.ApiError = _api.UltimoErrorApi;
+
             return View();
         }
 
         [HttpPost]
         public async Task<IActionResult> Create(UsuarioDto usuario)
         {
-            await _api.CrearUsuarioAsync(usuario);
+            if (string.IsNullOrWhiteSpace(usuario.PasswordUsuario))
+                ModelState.AddModelError(nameof(usuario.PasswordUsuario), "La contraseña es obligatoria.");
+
+            if (!ModelState.IsValid)
+            {
+                ViewBag.Roles = await _api.ObtenerRolesAsync();
+                return View(usuario);
+            }
+
+            var ok = await _api.CrearUsuarioAsync(usuario);
+
+            if (!ok)
+            {
+                var error = _api.UltimoErrorApi;
+
+                ViewBag.Roles = await _api.ObtenerRolesAsync();
+                ViewBag.ApiError = error;
+
+                return View(usuario);
+            }
+
             return RedirectToAction("Index");
         }
 
@@ -52,7 +79,15 @@ namespace FrontendFacturacion.Controllers
             var usuario = await _api.ObtenerUsuarioPorDpiAsync(id);
 
             if (usuario == null)
+            {
+                TempData["ApiError"] = string.IsNullOrWhiteSpace(_api.UltimoErrorApi)
+                    ? "No se encontró el usuario solicitado."
+                    : _api.UltimoErrorApi;
+
                 return RedirectToAction("Index");
+            }
+
+            usuario.PasswordUsuario = "";
 
             return View(usuario);
         }
@@ -60,14 +95,42 @@ namespace FrontendFacturacion.Controllers
         [HttpPost]
         public async Task<IActionResult> Edit(string id, UsuarioDto usuario)
         {
-            await _api.ActualizarUsuarioAsync(id, usuario);
+            if (string.IsNullOrWhiteSpace(usuario.PasswordUsuario))
+                ModelState.Remove(nameof(usuario.PasswordUsuario));
+
+            if (!ModelState.IsValid)
+            {
+                ViewBag.Roles = await _api.ObtenerRolesAsync();
+                return View(usuario);
+            }
+
+            var ok = await _api.ActualizarUsuarioAsync(id, usuario);
+
+            if (!ok)
+            {
+                var error = _api.UltimoErrorApi;
+
+                ViewBag.Roles = await _api.ObtenerRolesAsync();
+                ViewBag.ApiError = error;
+
+                return View(usuario);
+            }
+
             return RedirectToAction("Index");
         }
 
         [HttpPost]
         public async Task<IActionResult> Delete(string id)
         {
-            await _api.EliminarUsuarioAsync(id);
+            var ok = await _api.EliminarUsuarioAsync(id);
+
+            if (!ok)
+            {
+                TempData["ApiError"] = string.IsNullOrWhiteSpace(_api.UltimoErrorApi)
+                    ? "No se pudo eliminar el usuario."
+                    : _api.UltimoErrorApi;
+            }
+
             return RedirectToAction("Index");
         }
     }

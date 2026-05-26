@@ -16,6 +16,11 @@ namespace FrontendFacturacion.Controllers
         {
             var categorias = await _api.ObtenerCategoriasAsync();
 
+            ViewBag.ApiError = TempData["ApiError"] as string;
+
+            if (string.IsNullOrWhiteSpace(ViewBag.ApiError as string))
+                ViewBag.ApiError = _api.UltimoErrorApi;
+
             if (!string.IsNullOrWhiteSpace(buscar))
             {
                 categorias = categorias
@@ -38,7 +43,17 @@ namespace FrontendFacturacion.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(CategoriaDto categoria)
         {
-            await _api.CrearCategoriaAsync(categoria);
+            if (!ModelState.IsValid)
+                return View(categoria);
+
+            var ok = await _api.CrearCategoriaAsync(categoria);
+
+            if (!ok)
+            {
+                ViewBag.ApiError = _api.UltimoErrorApi;
+                return View(categoria);
+            }
+
             return RedirectToAction("Index");
         }
 
@@ -47,7 +62,13 @@ namespace FrontendFacturacion.Controllers
             var categoria = await _api.ObtenerCategoriaPorIdAsync(id);
 
             if (categoria == null)
+            {
+                TempData["ApiError"] = string.IsNullOrWhiteSpace(_api.UltimoErrorApi)
+                    ? "No se encontró la categoría solicitada."
+                    : _api.UltimoErrorApi;
+
                 return RedirectToAction("Index");
+            }
 
             return View(categoria);
         }
@@ -55,14 +76,32 @@ namespace FrontendFacturacion.Controllers
         [HttpPost]
         public async Task<IActionResult> Edit(int id, CategoriaDto categoria)
         {
-            await _api.ActualizarCategoriaAsync(id, categoria);
+            if (!ModelState.IsValid)
+                return View(categoria);
+
+            var ok = await _api.ActualizarCategoriaAsync(id, categoria);
+
+            if (!ok)
+            {
+                ViewBag.ApiError = _api.UltimoErrorApi;
+                return View(categoria);
+            }
+
             return RedirectToAction("Index");
         }
 
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
-            await _api.EliminarCategoriaAsync(id);
+            var ok = await _api.EliminarCategoriaAsync(id);
+
+            if (!ok)
+            {
+                TempData["ApiError"] = string.IsNullOrWhiteSpace(_api.UltimoErrorApi)
+                    ? "No se pudo eliminar la categoría."
+                    : _api.UltimoErrorApi;
+            }
+
             return RedirectToAction("Index");
         }
     }

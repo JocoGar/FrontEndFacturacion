@@ -12,6 +12,7 @@
 
     <a asp-controller="Clientes" asp-action="Index" class="btn btn-outline">Regresar</a>
 </div>
+<partial name="_FormFeedback" />
 
 <div class="form-card">
     <form asp-controller="Clientes" asp-action="Edit" asp-route-id="@Model.IdCliente" method="post">
@@ -62,3 +63,6 @@
         </div>
     </form>
 </div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

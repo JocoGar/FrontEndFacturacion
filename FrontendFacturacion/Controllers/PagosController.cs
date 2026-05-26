@@ -16,6 +16,11 @@ namespace FrontendFacturacion.Controllers
         {
             var pagos = await _api.ObtenerPagosAsync();
 
+            ViewBag.ApiError = TempData["ApiError"] as string;
+
+            if (string.IsNullOrWhiteSpace(ViewBag.ApiError as string))
+                ViewBag.ApiError = _api.UltimoErrorApi;
+
             if (!string.IsNullOrWhiteSpace(buscar))
             {
                 pagos = pagos
@@ -36,6 +41,7 @@ namespace FrontendFacturacion.Controllers
         {
             ViewBag.Facturas = await _api.ObtenerFacturasAsync();
             ViewBag.IdFacturaSeleccionada = idFactura;
+            ViewBag.ApiError = _api.UltimoErrorApi;
 
             return View();
         }
@@ -43,7 +49,24 @@ namespace FrontendFacturacion.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(PagoDto pago)
         {
-            await _api.CrearPagoAsync(pago);
+            if (!ModelState.IsValid)
+            {
+                ViewBag.Facturas = await _api.ObtenerFacturasAsync();
+                return View(pago);
+            }
+
+            var ok = await _api.CrearPagoAsync(pago);
+
+            if (!ok)
+            {
+                var error = _api.UltimoErrorApi;
+
+                ViewBag.Facturas = await _api.ObtenerFacturasAsync();
+                ViewBag.ApiError = error;
+
+                return View(pago);
+            }
+
             return RedirectToAction("Index");
         }
 
@@ -54,7 +77,13 @@ namespace FrontendFacturacion.Controllers
             var pago = await _api.ObtenerPagoPorIdAsync(id);
 
             if (pago == null)
+            {
+                TempData["ApiError"] = string.IsNullOrWhiteSpace(_api.UltimoErrorApi)
+                    ? "No se encontró el pago solicitado."
+                    : _api.UltimoErrorApi;
+
                 return RedirectToAction("Index");
+            }
 
             return View(pago);
         }
@@ -62,14 +91,39 @@ namespace FrontendFacturacion.Controllers
         [HttpPost]
         public async Task<IActionResult> Edit(int id, PagoDto pago)
         {
-            await _api.ActualizarPagoAsync(id, pago);
+            if (!ModelState.IsValid)
+            {
+                ViewBag.Facturas = await _api.ObtenerFacturasAsync();
+                return View(pago);
+            }
+
+            var ok = await _api.ActualizarPagoAsync(id, pago);
+
+            if (!ok)
+            {
+                var error = _api.UltimoErrorApi;
+
+                ViewBag.Facturas = await _api.ObtenerFacturasAsync();
+                ViewBag.ApiError = error;
+
+                return View(pago);
+            }
+
             return RedirectToAction("Index");
         }
 
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
-            await _api.EliminarPagoAsync(id);
+            var ok = await _api.EliminarPagoAsync(id);
+
+            if (!ok)
+            {
+                TempData["ApiError"] = string.IsNullOrWhiteSpace(_api.UltimoErrorApi)
+                    ? "No se pudo eliminar el pago."
+                    : _api.UltimoErrorApi;
+            }
+
             return RedirectToAction("Index");
         }
     }

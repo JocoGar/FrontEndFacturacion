@@ -16,6 +16,11 @@ namespace FrontendFacturacion.Controllers
         {
             var roles = await _api.ObtenerRolesAsync();
 
+            ViewBag.ApiError = TempData["ApiError"] as string;
+
+            if (string.IsNullOrWhiteSpace(ViewBag.ApiError as string))
+                ViewBag.ApiError = _api.UltimoErrorApi;
+
             if (!string.IsNullOrWhiteSpace(buscar))
             {
                 roles = roles
@@ -37,7 +42,17 @@ namespace FrontendFacturacion.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(RolDto rol)
         {
-            await _api.CrearRolAsync(rol);
+            if (!ModelState.IsValid)
+                return View(rol);
+
+            var ok = await _api.CrearRolAsync(rol);
+
+            if (!ok)
+            {
+                ViewBag.ApiError = _api.UltimoErrorApi;
+                return View(rol);
+            }
+
             return RedirectToAction("Index");
         }
 
@@ -46,7 +61,13 @@ namespace FrontendFacturacion.Controllers
             var rol = await _api.ObtenerRolPorIdAsync(id);
 
             if (rol == null)
+            {
+                TempData["ApiError"] = string.IsNullOrWhiteSpace(_api.UltimoErrorApi)
+                    ? "No se encontró el rol solicitado."
+                    : _api.UltimoErrorApi;
+
                 return RedirectToAction("Index");
+            }
 
             return View(rol);
         }
@@ -54,14 +75,32 @@ namespace FrontendFacturacion.Controllers
         [HttpPost]
         public async Task<IActionResult> Edit(int id, RolDto rol)
         {
-            await _api.ActualizarRolAsync(id, rol);
+            if (!ModelState.IsValid)
+                return View(rol);
+
+            var ok = await _api.ActualizarRolAsync(id, rol);
+
+            if (!ok)
+            {
+                ViewBag.ApiError = _api.UltimoErrorApi;
+                return View(rol);
+            }
+
             return RedirectToAction("Index");
         }
 
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
-            await _api.EliminarRolAsync(id);
+            var ok = await _api.EliminarRolAsync(id);
+
+            if (!ok)
+            {
+                TempData["ApiError"] = string.IsNullOrWhiteSpace(_api.UltimoErrorApi)
+                    ? "No se pudo eliminar el rol."
+                    : _api.UltimoErrorApi;
+            }
+
             return RedirectToAction("Index");
         }
     }

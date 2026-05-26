@@ -15,6 +15,8 @@
     <a asp-controller="Usuarios" asp-action="Index" class="btn btn-outline">Regresar</a>
 </div>
 
+<partial name="_FormFeedback" />
+
 <div class="form-card">
     <form asp-action="Edit" asp-route-id="@Model.DpiUsuario" method="post">
         <div class="form-section">
@@ -59,3 +61,6 @@
         </div>
     </form>
 </div>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

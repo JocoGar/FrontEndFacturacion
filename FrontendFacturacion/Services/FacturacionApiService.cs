@@ -2,6 +2,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Net;
+using System.ComponentModel.DataAnnotations;
 
 namespace FrontendFacturacion.Services
 {
@@ -1549,46 +1550,113 @@ namespace FrontendFacturacion.Services
     public class CategoriaDto
     {
         public int IdCategoriaProducto { get; set; }
+
+        [Required(ErrorMessage = "El nombre de la categoría es obligatorio.")]
+        [StringLength(100, ErrorMessage = "El nombre de la categoría no puede superar los 100 caracteres.")]
+        [RegularExpression(@"^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s]+$", ErrorMessage = "El nombre de la categoría solo puede contener letras, números y espacios.")]
         public string NombreCategoriaProducto { get; set; } = "";
+
+        [StringLength(200, ErrorMessage = "La descripción no puede superar los 200 caracteres.")]
         public string DescripcionCategoriaProducto { get; set; } = "";
     }
 
     public class ProductoDto
     {
         public int IdProducto { get; set; }
+
+        [Required(ErrorMessage = "El código del producto es obligatorio.")]
+        [StringLength(50, ErrorMessage = "El código no puede superar los 50 caracteres.")]
+        [RegularExpression(@"^[a-zA-Z0-9\-_]+$", ErrorMessage = "El código solo puede contener letras, números, guion y guion bajo.")]
         public string CodigoProducto { get; set; } = "";
+
+        [Range(1, int.MaxValue, ErrorMessage = "Debe seleccionar una categoría.")]
         public int IdCategoriaProducto { get; set; }
+
         public string NombreCategoriaProducto { get; set; } = "";
+
+        [Required(ErrorMessage = "El nombre del producto o servicio es obligatorio.")]
+        [StringLength(100, ErrorMessage = "El nombre no puede superar los 100 caracteres.")]
+        [RegularExpression(@"^[a-zA-ZáéíóúÁÉÍÓÚñÑ0-9\s\.\-]+$", ErrorMessage = "El nombre solo puede contener letras, números, espacios, punto o guion.")]
         public string NombreProducto { get; set; } = "";
+
+        [StringLength(200, ErrorMessage = "La descripción no puede superar los 200 caracteres.")]
         public string DescripcionProducto { get; set; } = "";
+
+        [Range(typeof(decimal), "0.01", "9999999999.99", ErrorMessage = "El precio unitario debe ser mayor a 0.")]
         public decimal PrecioUnitarioProducto { get; set; }
     }
 
     public class ClienteDto
     {
         public int IdCliente { get; set; }
+
+        [Required(ErrorMessage = "El DPI es obligatorio.")]
+        [StringLength(13, MinimumLength = 13, ErrorMessage = "El DPI debe tener exactamente 13 dígitos.")]
+        [RegularExpression(@"^\d{13}$", ErrorMessage = "El DPI solo debe contener números.")]
         public string DpiCliente { get; set; } = "";
+
+        [Required(ErrorMessage = "El NIT es obligatorio.")]
+        [StringLength(9, ErrorMessage = "El NIT no puede superar los 9 dígitos.")]
+        [RegularExpression(@"^\d{1,9}$", ErrorMessage = "El NIT solo debe contener números y máximo 9 dígitos.")]
         public string NitCliente { get; set; } = "";
+
+        [Required(ErrorMessage = "El nombre del cliente es obligatorio.")]
+        [StringLength(50, ErrorMessage = "El nombre no puede superar los 50 caracteres.")]
+        [RegularExpression(@"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$", ErrorMessage = "El nombre solo puede contener letras y espacios.")]
         public string NombreCliente { get; set; } = "";
+
+        [Required(ErrorMessage = "El apellido del cliente es obligatorio.")]
+        [StringLength(100, ErrorMessage = "El apellido no puede superar los 100 caracteres.")]
+        [RegularExpression(@"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$", ErrorMessage = "El apellido solo puede contener letras y espacios.")]
         public string ApellidoCliente { get; set; } = "";
+
+        [EmailAddress(ErrorMessage = "Debe ingresar un correo válido.")]
+        [StringLength(150, ErrorMessage = "El correo no puede superar los 150 caracteres.")]
         public string CorreoCliente { get; set; } = "";
+
+        [StringLength(20, ErrorMessage = "El teléfono no puede superar los 20 dígitos.")]
+        [RegularExpression(@"^\d{8,20}$", ErrorMessage = "El teléfono debe contener solo números, mínimo 8 y máximo 20 dígitos.")]
         public string TelefonoCliente { get; set; } = "";
     }
 
     public class RolDto
     {
         public int IdRol { get; set; }
+
+        [Required(ErrorMessage = "El nombre del rol es obligatorio.")]
+        [StringLength(80, ErrorMessage = "El nombre del rol no puede superar los 80 caracteres.")]
+        [RegularExpression(@"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$", ErrorMessage = "El rol solo puede contener letras y espacios.")]
         public string NombreRol { get; set; } = "";
     }
 
     public class UsuarioDto
     {
+        [Required(ErrorMessage = "El DPI del usuario es obligatorio.")]
+        [StringLength(13, MinimumLength = 13, ErrorMessage = "El DPI debe tener exactamente 13 dígitos.")]
+        [RegularExpression(@"^\d{13}$", ErrorMessage = "El DPI solo debe contener números.")]
         public string DpiUsuario { get; set; } = "";
+
+        [Required(ErrorMessage = "El nombre del usuario es obligatorio.")]
+        [StringLength(50, ErrorMessage = "El nombre no puede superar los 50 caracteres.")]
+        [RegularExpression(@"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$", ErrorMessage = "El nombre solo puede contener letras y espacios.")]
         public string NombreUsuario { get; set; } = "";
+
+        [Required(ErrorMessage = "El apellido del usuario es obligatorio.")]
+        [StringLength(100, ErrorMessage = "El apellido no puede superar los 100 caracteres.")]
+        [RegularExpression(@"^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$", ErrorMessage = "El apellido solo puede contener letras y espacios.")]
         public string ApellidoUsuario { get; set; } = "";
+
+        [Required(ErrorMessage = "El correo del usuario es obligatorio.")]
+        [EmailAddress(ErrorMessage = "Debe ingresar un correo válido.")]
+        [StringLength(150, ErrorMessage = "El correo no puede superar los 150 caracteres.")]
         public string CorreoUsuario { get; set; } = "";
+
+        [StringLength(100, MinimumLength = 3, ErrorMessage = "La contraseña debe tener entre 3 y 100 caracteres.")]
         public string PasswordUsuario { get; set; } = "";
+
+        [Range(1, int.MaxValue, ErrorMessage = "Debe seleccionar un rol.")]
         public int IdRol { get; set; }
+
         public string NombreRol { get; set; } = "";
     }
 
@@ -1627,13 +1695,28 @@ namespace FrontendFacturacion.Services
     public class PagoDto
     {
         public int IdPago { get; set; }
+
+        [Range(1, int.MaxValue, ErrorMessage = "Debe seleccionar una factura.")]
         public int IdFacturaPago { get; set; }
+
         public string NumeroFactura { get; set; } = "";
+
+        [Required(ErrorMessage = "La fecha de pago es obligatoria.")]
+        [DataType(DataType.Date)]
         public DateTime FechaPago { get; set; }
+
+        [Range(typeof(decimal), "0.01", "999999999999.99", ErrorMessage = "El monto del pago debe ser mayor a 0.")]
         public decimal MontoPago { get; set; }
+
+        [Required(ErrorMessage = "Debe seleccionar un método de pago.")]
+        [StringLength(15, ErrorMessage = "El método de pago no puede superar los 15 caracteres.")]
         public string MetodoPago { get; set; } = "";
+
+        [StringLength(100, ErrorMessage = "La referencia no puede superar los 100 caracteres.")]
+        [RegularExpression(@"^[a-zA-Z0-9\-_\/\s]*$", ErrorMessage = "La referencia solo puede contener letras, números, espacios, guion, guion bajo o diagonal.")]
         public string NumeroReferenciaPago { get; set; } = "";
     }
+
 
     public class DashboardViewModel
     {
@@ -1658,18 +1741,39 @@ namespace FrontendFacturacion.Services
 
     public class FacturaCrearViewModel
     {
+        [Range(1, int.MaxValue, ErrorMessage = "Debe seleccionar un cliente.")]
         public int IdClienteFactura { get; set; }
+
+        [Required(ErrorMessage = "Debe seleccionar un usuario vendedor.")]
+        [RegularExpression(@"^\d{13}$", ErrorMessage = "El DPI del usuario debe tener 13 dígitos.")]
         public string DpiUsuarioFactura { get; set; } = "";
+
+        [StringLength(30, ErrorMessage = "El número de factura no puede superar los 30 caracteres.")]
         public string NumeroFactura { get; set; } = "";
-        public DateTime FechaEmisionFactura { get; set; }
+
+        [Required(ErrorMessage = "La fecha de emisión es obligatoria.")]
+        [DataType(DataType.Date)]
+        public DateTime FechaEmisionFactura { get; set; } = DateTime.Today;
+
+        [Required(ErrorMessage = "Debe seleccionar una moneda.")]
+        [StringLength(3, ErrorMessage = "La moneda debe tener máximo 3 caracteres.")]
+        [RegularExpression(@"^(GTQ|USD)$", ErrorMessage = "La moneda solo puede ser GTQ o USD.")]
         public string MonedaFactura { get; set; } = "GTQ";
+
+        [MinLength(1, ErrorMessage = "La factura debe tener al menos un producto o servicio.")]
         public List<DetalleFacturaCrearDto> Detalles { get; set; } = new();
     }
 
     public class DetalleFacturaCrearDto
     {
+        [Required(ErrorMessage = "Debe seleccionar un producto o servicio.")]
+        [StringLength(50, ErrorMessage = "El código del producto no puede superar los 50 caracteres.")]
         public string CodigoProductoDetalleFactura { get; set; } = "";
+
+        [Range(typeof(decimal), "0.01", "9999999999.99", ErrorMessage = "La cantidad debe ser mayor a 0.")]
         public decimal CantidadDetalleFactura { get; set; }
+
+        [Range(typeof(decimal), "0.01", "9999999999.99", ErrorMessage = "El precio unitario debe ser mayor a 0.")]
         public decimal PrecioUnitarioDetalleFactura { get; set; }
     }
 

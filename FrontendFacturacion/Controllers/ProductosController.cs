@@ -16,6 +16,11 @@ namespace FrontendFacturacion.Controllers
         {
             var productos = await _api.ObtenerProductosAsync();
 
+            ViewBag.ApiError = TempData["ApiError"] as string;
+
+            if (string.IsNullOrWhiteSpace(ViewBag.ApiError as string))
+                ViewBag.ApiError = _api.UltimoErrorApi;
+
             if (!string.IsNullOrWhiteSpace(buscar))
             {
                 productos = productos
@@ -35,13 +40,32 @@ namespace FrontendFacturacion.Controllers
         public async Task<IActionResult> Create()
         {
             ViewBag.Categorias = await _api.ObtenerCategoriasAsync();
+            ViewBag.ApiError = _api.UltimoErrorApi;
+
             return View();
         }
 
         [HttpPost]
         public async Task<IActionResult> Create(ProductoDto producto)
         {
-            await _api.CrearProductoAsync(producto);
+            if (!ModelState.IsValid)
+            {
+                ViewBag.Categorias = await _api.ObtenerCategoriasAsync();
+                return View(producto);
+            }
+
+            var ok = await _api.CrearProductoAsync(producto);
+
+            if (!ok)
+            {
+                var error = _api.UltimoErrorApi;
+
+                ViewBag.Categorias = await _api.ObtenerCategoriasAsync();
+                ViewBag.ApiError = error;
+
+                return View(producto);
+            }
+
             return RedirectToAction("Index");
         }
 
@@ -52,7 +76,13 @@ namespace FrontendFacturacion.Controllers
             var producto = await _api.ObtenerProductoPorIdAsync(id);
 
             if (producto == null)
+            {
+                TempData["ApiError"] = string.IsNullOrWhiteSpace(_api.UltimoErrorApi)
+                    ? "No se encontró el producto o servicio solicitado."
+                    : _api.UltimoErrorApi;
+
                 return RedirectToAction("Index");
+            }
 
             return View(producto);
         }
@@ -60,14 +90,39 @@ namespace FrontendFacturacion.Controllers
         [HttpPost]
         public async Task<IActionResult> Edit(int id, ProductoDto producto)
         {
-            await _api.ActualizarProductoAsync(id, producto);
+            if (!ModelState.IsValid)
+            {
+                ViewBag.Categorias = await _api.ObtenerCategoriasAsync();
+                return View(producto);
+            }
+
+            var ok = await _api.ActualizarProductoAsync(id, producto);
+
+            if (!ok)
+            {
+                var error = _api.UltimoErrorApi;
+
+                ViewBag.Categorias = await _api.ObtenerCategoriasAsync();
+                ViewBag.ApiError = error;
+
+                return View(producto);
+            }
+
             return RedirectToAction("Index");
         }
 
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
-            await _api.EliminarProductoAsync(id);
+            var ok = await _api.EliminarProductoAsync(id);
+
+            if (!ok)
+            {
+                TempData["ApiError"] = string.IsNullOrWhiteSpace(_api.UltimoErrorApi)
+                    ? "No se pudo eliminar el producto o servicio."
+                    : _api.UltimoErrorApi;
+            }
+
             return RedirectToAction("Index");
         }
     }

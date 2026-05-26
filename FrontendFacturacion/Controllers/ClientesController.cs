@@ -16,6 +16,11 @@ namespace FrontendFacturacion.Controllers
         {
             var clientes = await _api.ObtenerClientesAsync();
 
+            ViewBag.ApiError = TempData["ApiError"] as string;
+
+            if (string.IsNullOrWhiteSpace(ViewBag.ApiError as string))
+                ViewBag.ApiError = _api.UltimoErrorApi;
+
             if (!string.IsNullOrWhiteSpace(buscar))
             {
                 clientes = clientes
@@ -42,7 +47,17 @@ namespace FrontendFacturacion.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(ClienteDto cliente)
         {
-            await _api.CrearClienteAsync(cliente);
+            if (!ModelState.IsValid)
+                return View(cliente);
+
+            var ok = await _api.CrearClienteAsync(cliente);
+
+            if (!ok)
+            {
+                ViewBag.ApiError = _api.UltimoErrorApi;
+                return View(cliente);
+            }
+
             return RedirectToAction("Index");
         }
 
@@ -51,7 +66,13 @@ namespace FrontendFacturacion.Controllers
             var cliente = await _api.ObtenerClientePorIdAsync(id);
 
             if (cliente == null)
+            {
+                TempData["ApiError"] = string.IsNullOrWhiteSpace(_api.UltimoErrorApi)
+                    ? "No se encontró el cliente solicitado."
+                    : _api.UltimoErrorApi;
+
                 return RedirectToAction("Index");
+            }
 
             return View(cliente);
         }
@@ -59,14 +80,32 @@ namespace FrontendFacturacion.Controllers
         [HttpPost]
         public async Task<IActionResult> Edit(int id, ClienteDto cliente)
         {
-            await _api.ActualizarClienteAsync(id, cliente);
+            if (!ModelState.IsValid)
+                return View(cliente);
+
+            var ok = await _api.ActualizarClienteAsync(id, cliente);
+
+            if (!ok)
+            {
+                ViewBag.ApiError = _api.UltimoErrorApi;
+                return View(cliente);
+            }
+
             return RedirectToAction("Index");
         }
 
         [HttpPost]
         public async Task<IActionResult> Delete(int id)
         {
-            await _api.EliminarClienteAsync(id);
+            var ok = await _api.EliminarClienteAsync(id);
+
+            if (!ok)
+            {
+                TempData["ApiError"] = string.IsNullOrWhiteSpace(_api.UltimoErrorApi)
+                    ? "No se pudo eliminar el cliente."
+                    : _api.UltimoErrorApi;
+            }
+
             return RedirectToAction("Index");
         }
     }

@@ -21,6 +21,8 @@
     <a asp-controller="Facturas" asp-action="Index" class="btn btn-outline">Regresar</a>
 </div>
 
+<partial name="_FormFeedback" />
+
 <div class="form-card">
     <form asp-controller="Facturas" asp-action="Create" method="post">
         <input asp-for="NumeroFactura" type="hidden" value="@numeroFacturaInterno" />
@@ -40,6 +42,7 @@
                             </option>
                         }
                     </select>
+                    <span asp-validation-for="IdClienteFactura" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
@@ -53,19 +56,26 @@
                             </option>
                         }
                     </select>
+                    <span asp-validation-for="DpiUsuarioFactura" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
                     <label>Moneda</label>
-                    <select asp-for="MonedaFactura">
-                        <option>GTQ</option>
-                        <option>USD</option>
+                    <select asp-for="MonedaFactura" required>
+                        <option value="GTQ">GTQ</option>
+                        <option value="USD">USD</option>
                     </select>
+                    <span asp-validation-for="MonedaFactura" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
                     <label>Fecha de emisión</label>
-                    <input asp-for="FechaEmisionFactura" type="date" value="@DateTime.Now.ToString("yyyy-MM-dd")" required />
+                    <input asp-for="FechaEmisionFactura"
+                           type="date"
+                           value="@DateTime.Now.ToString("yyyy-MM-dd")"
+                           data-no-futuro="true"
+                           required />
+                    <span asp-validation-for="FechaEmisionFactura" class="text-danger"></span>
                 </div>
 
                 <div class="form-group">
@@ -102,14 +112,20 @@
                             </select>
                         </td>
                         <td class="text-center">
-                            <input name="Detalles[0].CantidadDetalleFactura" type="number" value="1" min="1" step="0.01" required />
+                            <input name="Detalles[0].CantidadDetalleFactura"
+                                   type="number"
+                                   value="1"
+                                   min="0.01"
+                                   step="0.01"
+                                   data-decimal-positivo="true"
+                                   required />
                         </td>
                         <td class="text-right">
                             <input name="Detalles[0].PrecioUnitarioDetalleFactura"
                                    type="number"
                                    value="0.00"
                                    step="0.01"
-                                   min="0"
+                                   min="0.01"
                                    readonly
                                    required />
                         </td>
@@ -157,22 +173,28 @@
                         <option value="" data-precio="0.00">Seleccione</option>
                         @foreach (var producto in productos)
                         {
-                                <option value="@producto.CodigoProducto"
-                                        data-precio="@producto.PrecioUnitarioProducto.ToString("0.00", CultureInfo.InvariantCulture)">
-                                    @producto.CodigoProducto - @producto.NombreProducto
-                                </option>
+                                    <option value="@producto.CodigoProducto"
+                                            data-precio="@producto.PrecioUnitarioProducto.ToString("0.00", CultureInfo.InvariantCulture)">
+                                        @producto.CodigoProducto - @producto.NombreProducto
+                                    </option>
                         }
                     </select>
                 </td>
                 <td class="text-center">
-                    <input name="Detalles[${indiceDetalle}].CantidadDetalleFactura" type="number" value="1" min="1" step="0.01" required />
+                    <input name="Detalles[${indiceDetalle}].CantidadDetalleFactura"
+                           type="number"
+                           value="1"
+                           min="0.01"
+                           step="0.01"
+                           data-decimal-positivo="true"
+                           required />
                 </td>
                 <td class="text-right">
                     <input name="Detalles[${indiceDetalle}].PrecioUnitarioDetalleFactura"
                            type="number"
                            value="0.00"
                            step="0.01"
-                           min="0"
+                           min="0.01"
                            readonly
                            required />
                 </td>
@@ -202,4 +224,6 @@
             });
         });
     </script>
+
+    <partial name="_ValidationScriptsPartial" />
 }
