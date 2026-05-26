@@ -7,6 +7,11 @@
     var usuarioNombre = Context.Session.GetString("UsuarioNombre") ?? "Usuario";
     var usuarioRol = Context.Session.GetString("UsuarioRol") ?? "Sistema";
 
+    var rol = usuarioRol.Trim().ToLower();
+
+    var esAdmin = rol == "administrador" || rol == "admin";
+    var esVendedor = rol == "vendedor";
+
     var partesNombre = usuarioNombre.Split(' ', StringSplitOptions.RemoveEmptyEntries);
     var iniciales = partesNombre.Length >= 2
         ? $"{partesNombre[0][0]}{partesNombre[1][0]}".ToUpper()
@@ -35,14 +40,26 @@
 
         <nav class="menu">
             <a asp-controller="Home" asp-action="Index">Inicio</a>
-            <a asp-controller="Productos" asp-action="Index">Productos/Servicios</a>
-            <a asp-controller="Categorias" asp-action="Index">Categorías</a>
-            <a asp-controller="Clientes" asp-action="Index">Clientes</a>
-            <a asp-controller="Facturas" asp-action="Index">Facturas</a>
-            <a asp-controller="Pagos" asp-action="Index">Pagos</a>
-            <a asp-controller="Usuarios" asp-action="Index">Usuarios</a>
-            <a asp-controller="Roles" asp-action="Index">Roles</a>
-            <a asp-controller="Servidor" asp-action="Index">Estado del servidor</a>
+
+            @if (esAdmin)
+            {
+                <a asp-controller="Productos" asp-action="Index">Productos/Servicios</a>
+                <a asp-controller="Categorias" asp-action="Index">Categorías</a>
+                <a asp-controller="Clientes" asp-action="Index">Clientes</a>
+                <a asp-controller="Facturas" asp-action="Index">Facturas</a>
+                <a asp-controller="Pagos" asp-action="Index">Pagos</a>
+                <a asp-controller="Usuarios" asp-action="Index">Usuarios</a>
+                <a asp-controller="Roles" asp-action="Index">Roles</a>
+                <a asp-controller="Servidor" asp-action="Index">Estado del servidor</a>
+            }
+            else if (esVendedor)
+            {
+                <a asp-controller="Clientes" asp-action="Index">Clientes</a>
+                <a asp-controller="Productos" asp-action="Index">Productos/Servicios</a>
+                <a asp-controller="Facturas" asp-action="Index">Facturas</a>
+                <a asp-controller="Pagos" asp-action="Index">Pagos</a>
+            }
+
             <a asp-controller="Cuenta" asp-action="Logout" style="margin-top: 16px; color: #ef4444;">Cerrar sesión</a>
         </nav>
 

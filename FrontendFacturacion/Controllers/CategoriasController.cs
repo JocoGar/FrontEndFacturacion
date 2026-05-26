@@ -1,8 +1,10 @@
 using FrontendFacturacion.Services;
 using Microsoft.AspNetCore.Mvc;
+using FrontendFacturacion.Filters;
 
 namespace FrontendFacturacion.Controllers
 {
+    using FrontendFacturacion.Services;
     public class CategoriasController : Controller
     {
         private readonly FacturacionApiService _api;

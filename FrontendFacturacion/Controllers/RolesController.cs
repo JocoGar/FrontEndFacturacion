@@ -1,8 +1,10 @@
 using FrontendFacturacion.Services;
 using Microsoft.AspNetCore.Mvc;
+using FrontendFacturacion.Filters;
 
 namespace FrontendFacturacion.Controllers
 {
+    [RequireRole("Administrador", "admin")]
     public class RolesController : Controller
     {
         private readonly FacturacionApiService _api;
