@@ -1751,6 +1751,8 @@ namespace FrontendFacturacion.Services
         [StringLength(15, ErrorMessage = "El método de pago no puede superar los 15 caracteres.")]
         public string MetodoPago { get; set; } = "";
 
+        [Display(Name = "Número de referencia")]
+        [Required(ErrorMessage = "Debe ingresar el número de referencia del pago.")]
         [StringLength(100, ErrorMessage = "La referencia no puede superar los 100 caracteres.")]
         [RegularExpression(@"^[a-zA-Z0-9\-_\/\s]*$", ErrorMessage = "La referencia solo puede contener letras, números, espacios, guion, guion bajo o diagonal.")]
         public string NumeroReferenciaPago { get; set; } = "";

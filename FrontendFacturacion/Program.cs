@@ -1,4 +1,6 @@
 using FrontendFacturacion.Services;
+using System.Globalization;
+using Microsoft.AspNetCore.Localization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -28,6 +30,14 @@ builder.Services.AddHttpClient<FacturacionApiService>((sp, client) =>
 });
 
 var app = builder.Build();
+var culturaDecimal = new CultureInfo("en-US");
+
+app.UseRequestLocalization(new RequestLocalizationOptions
+{
+    DefaultRequestCulture = new RequestCulture(culturaDecimal),
+    SupportedCultures = new List<CultureInfo> { culturaDecimal },
+    SupportedUICultures = new List<CultureInfo> { culturaDecimal }
+});
 
 if (!app.Environment.IsDevelopment())
 {

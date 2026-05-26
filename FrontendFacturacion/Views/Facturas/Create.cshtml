@@ -1,8 +1,14 @@
 ﻿@using FrontendFacturacion.Services
 @using System.Globalization
 @model FrontendFacturacion.Services.FacturaCrearViewModel
+@using Microsoft.AspNetCore.Http
 
 @{
+    var rol = Context.Session.GetString("UsuarioRol")?.Trim().ToLower() ?? "";
+    var dpiSesion = Context.Session.GetString("UsuarioDpi") ?? "";
+
+    var esAdmin = rol == "administrador" || rol == "admin";
+    var esVendedor = rol == "vendedor";
     ViewData["Title"] = "Nueva Factura";
 
     var clientes = ViewBag.Clientes as List<ClienteDto> ?? new();
@@ -71,25 +77,37 @@
                     <span asp-validation-for="IdClienteFactura" class="text-danger"></span>
                 </div>
 
-                <div class="form-group">
-                    <label>Usuario vendedor</label>
-                    <select asp-for="DpiUsuarioFactura" required>
-                        <option value="">Seleccione un usuario</option>
+                @if (esAdmin)
+                {
+                    <div class="form-group">
+                        <label>Usuario vendedor</label>
+                        <select asp-for="DpiUsuarioFactura" required>
+                            <option value="">Seleccione un usuario</option>
 
-                        @if (!string.IsNullOrWhiteSpace(Model.DpiUsuarioFactura) && !usuarioSeleccionadoExiste)
-                        {
-                            <option value="@Model.DpiUsuarioFactura" selected>Usuario seleccionado</option>
-                        }
+                            @if (!string.IsNullOrWhiteSpace(Model.DpiUsuarioFactura) && !usuarioSeleccionadoExiste)
+                            {
+                                <option value="@Model.DpiUsuarioFactura" selected>Usuario seleccionado</option>
+                            }
 
-                        @foreach (var usuario in usuarios)
-                        {
-                            <option value="@usuario.DpiUsuario">
-                                @usuario.NombreUsuario @usuario.ApellidoUsuario
-                            </option>
-                        }
-                    </select>
-                    <span asp-validation-for="DpiUsuarioFactura" class="text-danger"></span>
-                </div>
+                            @foreach (var usuario in usuarios)
+                            {
+                                <option value="@usuario.DpiUsuario">
+                                    @usuario.NombreUsuario @usuario.ApellidoUsuario
+                                </option>
+                            }
+                        </select>
+                        <span asp-validation-for="DpiUsuarioFactura" class="text-danger"></span>
+                    </div>
+                }
+                else
+                {
+                    <input asp-for="DpiUsuarioFactura" type="hidden" value="@dpiSesion" />
+
+                    <div class="form-group">
+                        <label>Usuario vendedor</label>
+                        <input type="text" value="Asignado automáticamente" readonly />
+                    </div>
+                }
 
                 <div class="form-group">
                     <label>Moneda</label>

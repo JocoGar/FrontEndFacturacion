@@ -65,6 +65,16 @@ namespace FrontendFacturacion.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(FacturaCrearViewModel factura)
         {
+            var rolSesion = HttpContext.Session.GetString("UsuarioRol")?.Trim().ToLower() ?? "";
+            var dpiSesion = HttpContext.Session.GetString("UsuarioDpi") ?? "";
+
+            var esAdmin = rolSesion == "administrador" || rolSesion == "admin";
+            var esVendedor = rolSesion == "vendedor";
+
+            if (esVendedor)
+            {
+                factura.DpiUsuarioFactura = dpiSesion;
+            }
             factura.DpiUsuarioFactura = (factura.DpiUsuarioFactura ?? "").Trim();
             factura.MonedaFactura = string.IsNullOrWhiteSpace(factura.MonedaFactura)
                 ? "GTQ"

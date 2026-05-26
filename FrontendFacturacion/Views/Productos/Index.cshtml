@@ -1,4 +1,11 @@
 ﻿@model List<FrontendFacturacion.Services.ProductoDto>
+@using Microsoft.AspNetCore.Http
+
+@{
+    var rol = Context.Session.GetString("UsuarioRol")?.Trim().ToLower() ?? "";
+    var esAdmin = rol == "administrador" || rol == "admin";
+    var esVendedor = rol == "vendedor";
+}
 
 @{
     ViewData["Title"] = "Productos";
@@ -11,7 +18,10 @@
         <p>Gestión de productos o servicios disponibles para facturación.</p>
     </div>
 
-    <a asp-controller="Productos" asp-action="Create" class="btn btn-primary">Nuevo producto/servicio</a>
+    @if (esAdmin)
+    {
+        <a asp-controller="Productos" asp-action="Create" class="btn btn-primary">Nuevo producto/servicio</a>
+    }
 </div>
 
 <div class="table-card">
@@ -48,13 +58,20 @@
                     <td>@producto.DescripcionProducto</td>
                     <td class="text-right">Q@(producto.PrecioUnitarioProducto.ToString("N2"))</td>
                     <td>
-                        <div class="actions">
-                            <a asp-controller="Productos" asp-action="Edit" asp-route-id="@producto.IdProducto" class="action-btn">Editar</a>
+                        @if (esAdmin)
+                        {
+                            <div class="actions">
+                                <a asp-controller="Productos" asp-action="Edit" asp-route-id="@producto.IdProducto" class="action-btn">Editar</a>
 
-                            <form asp-controller="Productos" asp-action="Delete" asp-route-id="@producto.IdProducto" method="post" class="inline-form">
-                                <button class="action-btn" type="submit" onclick="return confirm('¿Eliminar producto/servicio?')">Eliminar</button>
-                            </form>
-                        </div>
+                                <form asp-controller="Productos" asp-action="Delete" asp-route-id="@producto.IdProducto" method="post" class="inline-form">
+                                    <button class="action-btn" type="submit" onclick="return confirm('¿Eliminar producto/servicio?')">Eliminar</button>
+                                </form>
+                            </div>
+                        }
+                        else
+                        {
+                            <span class="badge badge-blue">Solo lectura</span>
+                        }
                     </td>
                 </tr>
             }
