@@ -12,41 +12,44 @@ namespace FrontendFacturacion.Controllers
             _api = api;
         }
 
-        /// <summary>
-        /// Devuelve la vista de inicio de sesión.
-        /// </summary>
-        /// <remarks>Accesible mediante HTTP GET (atributo [HttpGet]); no procesa datos ni requiere
-        /// parámetros.</remarks>
-        /// <returns>Un IActionResult que renderiza la vista de inicio de sesión.</returns>
         [HttpGet]
         public IActionResult Login()
         {
             return View();
         }
 
-        /// <summary>
-        /// Método para manejar el inicio de sesión del usuario. Verifica las credenciales ingresadas y redirige al usuario a la página principal si son correctas. Si las credenciales son incorrectas, muestra un mensaje de error.
-        /// </summary>
-        /// <param name="nombreUsuario"></param>
-        /// <param name="password"></param>
-        /// <returns></returns>
         [HttpPost]
         public async Task<IActionResult> Login(string nombreUsuario, string password)
         {
-            if (nombreUsuario == "admin" && password == "123")
+            if (string.IsNullOrWhiteSpace(nombreUsuario) || string.IsNullOrWhiteSpace(password))
             {
+                ViewBag.Error = "Debe ingresar usuario y contraseña.";
+                return View();
+            }
+
+            var usuario = await _api.LoginAsync(nombreUsuario, password);
+
+            if (usuario != null)
+            {
+                HttpContext.Session.SetString("UsuarioDpi", usuario.DpiUsuario);
+                HttpContext.Session.SetString("UsuarioNombre", $"{usuario.NombreUsuario} {usuario.ApellidoUsuario}".Trim());
+                HttpContext.Session.SetString("UsuarioRol", usuario.NombreRol);
+
                 return RedirectToAction("Index", "Home");
             }
 
-            var usuario = await _api.ObtenerUsuarioPorDpiAsync(nombreUsuario);
+            ViewBag.Error = string.IsNullOrWhiteSpace(_api.UltimoErrorApi)
+                ? "Usuario o contraseña incorrectos."
+                : _api.UltimoErrorApi;
 
-            if (usuario != null && usuario.PasswordUsuario == password)
-            {
-                return RedirectToAction("Index", "Home");
-            }
-
-            ViewBag.Error = "Usuario o contraseña incorrectos.";
             return View();
+        }
+
+        [HttpGet]
+        public IActionResult Logout()
+        {
+            HttpContext.Session.Clear();
+            return RedirectToAction("Login", "Cuenta");
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Net;
 
 namespace FrontendFacturacion.Services
 {
@@ -11,6 +12,144 @@ namespace FrontendFacturacion.Services
         private readonly IWebHostEnvironment _environment;
         private readonly JsonSerializerOptions _mockJsonOptions;
         private readonly JsonSerializerOptions _apiJsonOptions;
+
+        public string UltimoErrorApi { get; private set; } = "";
+        public int? UltimoCodigoEstadoApi { get; private set; }
+
+        private void LimpiarErrorApi()
+        {
+            UltimoErrorApi = "";
+            UltimoCodigoEstadoApi = null;
+        }
+
+        private async Task<string> LeerMensajeErrorAsync(HttpResponseMessage response, CancellationToken token)
+        {
+            var contenido = await response.Content.ReadAsStringAsync(token);
+
+            if (string.IsNullOrWhiteSpace(contenido))
+                return $"La API respondió {(int)response.StatusCode} {response.ReasonPhrase}.";
+
+            try
+            {
+                using var doc = JsonDocument.Parse(contenido);
+
+                if (doc.RootElement.ValueKind == JsonValueKind.Object)
+                {
+                    if (doc.RootElement.TryGetProperty("message", out var message))
+                        return message.GetString() ?? contenido;
+
+                    if (doc.RootElement.TryGetProperty("mensaje", out var mensaje))
+                        return mensaje.GetString() ?? contenido;
+
+                    if (doc.RootElement.TryGetProperty("error", out var error))
+                        return error.GetString() ?? contenido;
+                }
+            }
+            catch
+            {
+                // Si la API devuelve HTML o texto plano, se muestra el contenido resumido.
+            }
+
+            return contenido.Length > 250 ? contenido.Substring(0, 250) : contenido;
+        }
+        public async Task<UsuarioDto?> LoginAsync(string usuario, string password)
+        {
+            LimpiarErrorApi();
+
+            if (string.IsNullOrWhiteSpace(usuario) || string.IsNullOrWhiteSpace(password))
+            {
+                UltimoErrorApi = "Debe ingresar usuario y contraseña.";
+                return null;
+            }
+
+            if (usuario.Equals("admin", StringComparison.OrdinalIgnoreCase) && password == "123")
+            {
+                return new UsuarioDto
+                {
+                    DpiUsuario = "admin",
+                    NombreUsuario = "Administrador",
+                    ApellidoUsuario = "Local",
+                    CorreoUsuario = "admin@local",
+                    PasswordUsuario = "123",
+                    IdRol = 1,
+                    NombreRol = "Administrador"
+                };
+            }
+
+            if (UsarMocks())
+            {
+                var usuariosMock = await ObtenerUsuariosAsync();
+
+                return usuariosMock.FirstOrDefault(u =>
+                    (u.DpiUsuario.Equals(usuario, StringComparison.OrdinalIgnoreCase) ||
+                     u.CorreoUsuario.Equals(usuario, StringComparison.OrdinalIgnoreCase)) &&
+                    u.PasswordUsuario == password);
+            }
+
+            var usuarioApi = await ObtenerUsuarioPorDpiAsync(usuario);
+
+            if (usuarioApi != null)
+            {
+                if (usuarioApi.PasswordUsuario == password)
+                    return usuarioApi;
+
+                UltimoErrorApi = "Usuario o contraseña incorrectos.";
+                return null;
+            }
+
+            if (string.IsNullOrWhiteSpace(UltimoErrorApi) || UltimoCodigoEstadoApi == 404)
+                UltimoErrorApi = "Usuario o contraseña incorrectos.";
+
+            return null;
+        }
+        private void RegistrarErrorApi(string endpoint, HttpStatusCode statusCode, string mensaje)
+        {
+            UltimoCodigoEstadoApi = (int)statusCode;
+
+            UltimoErrorApi = statusCode switch
+            {
+                HttpStatusCode.ServiceUnavailable =>
+                    $"La API real no está disponible en este momento. Endpoint: /api/{endpoint}. Código 503.",
+
+                HttpStatusCode.BadGateway =>
+                    $"El balanceador no pudo comunicarse con los nodos de API. Endpoint: /api/{endpoint}. Código 502.",
+
+                HttpStatusCode.GatewayTimeout =>
+                    $"La API tardó demasiado en responder. Endpoint: /api/{endpoint}. Código 504.",
+
+                HttpStatusCode.NotFound =>
+                    $"El recurso solicitado no existe en la API. Endpoint: /api/{endpoint}. Código 404.",
+
+                HttpStatusCode.Unauthorized =>
+                    "Usuario o contraseña incorrectos.",
+
+                HttpStatusCode.Conflict =>
+                    mensaje,
+
+                HttpStatusCode.BadRequest =>
+                    mensaje,
+
+                _ =>
+                    $"Error al consumir la API real. Endpoint: /api/{endpoint}. Código {(int)statusCode}. Detalle: {mensaje}"
+            };
+        }
+
+        private void RegistrarExcepcionApi(string endpoint, Exception ex)
+        {
+            UltimoCodigoEstadoApi = null;
+
+            UltimoErrorApi = ex switch
+            {
+                TaskCanceledException =>
+                    $"La API no respondió dentro del tiempo configurado. Endpoint: /api/{endpoint}.",
+
+                HttpRequestException =>
+                    $"No se pudo establecer comunicación con la API real. Endpoint: /api/{endpoint}. Verifique la VIP, HAProxy o los nodos de API.",
+
+                _ =>
+                    $"Error inesperado al consumir la API real. Endpoint: /api/{endpoint}. Detalle: {ex.Message}"
+            };
+        }
 
         public FacturacionApiService(
             HttpClient httpClient,
@@ -124,13 +263,19 @@ namespace FrontendFacturacion.Services
 
         private async Task<List<TRaw>?> GetApiListAsync<TRaw>(string endpoint, string? arrayProperty = null)
         {
+            LimpiarErrorApi();
+
             try
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
                 var response = await _httpClient.GetAsync(Endpoint(endpoint), cts.Token);
 
                 if (!response.IsSuccessStatusCode)
+                {
+                    var mensaje = await LeerMensajeErrorAsync(response, cts.Token);
+                    RegistrarErrorApi(endpoint, response.StatusCode, mensaje);
                     return null;
+                }
 
                 var json = await response.Content.ReadAsStringAsync(cts.Token);
 
@@ -152,10 +297,12 @@ namespace FrontendFacturacion.Services
                     return JsonSerializer.Deserialize<List<TRaw>>(arrayElement.GetRawText(), _apiJsonOptions) ?? new List<TRaw>();
                 }
 
+                UltimoErrorApi = $"La respuesta de /api/{endpoint} no tiene el formato esperado.";
                 return null;
             }
-            catch
+            catch (Exception ex)
             {
+                RegistrarExcepcionApi(endpoint, ex);
                 return null;
             }
         }
@@ -194,27 +341,87 @@ namespace FrontendFacturacion.Services
 
         private async Task<bool> PostApiAsync<T>(string endpoint, T datos)
         {
+            LimpiarErrorApi();
+
             try
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
                 var response = await _httpClient.PostAsJsonAsync(Endpoint(endpoint), datos, _apiJsonOptions, cts.Token);
-                return response.IsSuccessStatusCode;
+
+                if (response.IsSuccessStatusCode)
+                    return true;
+
+                var mensaje = await LeerMensajeErrorAsync(response, cts.Token);
+                RegistrarErrorApi(endpoint, response.StatusCode, mensaje);
+                return false;
             }
-            catch
+            catch (Exception ex)
             {
+                RegistrarExcepcionApi(endpoint, ex);
                 return false;
             }
         }
 
+        private async Task<bool> PutApiAsync<T>(string endpoint, T datos)
+        {
+            LimpiarErrorApi();
+
+            try
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
+                var response = await _httpClient.PutAsJsonAsync(Endpoint(endpoint), datos, _apiJsonOptions, cts.Token);
+
+                if (response.IsSuccessStatusCode)
+                    return true;
+
+                var mensaje = await LeerMensajeErrorAsync(response, cts.Token);
+                RegistrarErrorApi(endpoint, response.StatusCode, mensaje);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                RegistrarExcepcionApi(endpoint, ex);
+                return false;
+            }
+        }
+
+        private async Task<bool> DeleteApiAsync(string endpoint)
+        {
+            LimpiarErrorApi();
+
+            try
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
+                var response = await _httpClient.DeleteAsync(Endpoint(endpoint), cts.Token);
+
+                if (response.IsSuccessStatusCode)
+                    return true;
+
+                var mensaje = await LeerMensajeErrorAsync(response, cts.Token);
+                RegistrarErrorApi(endpoint, response.StatusCode, mensaje);
+                return false;
+            }
+            catch (Exception ex)
+            {
+                RegistrarExcepcionApi(endpoint, ex);
+                return false;
+            }
+        }
         private async Task<TRaw?> PostApiObjectAsync<TRequest, TRaw>(string endpoint, TRequest datos, string objectProperty)
         {
+            LimpiarErrorApi();
+
             try
             {
                 using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
                 var response = await _httpClient.PostAsJsonAsync(Endpoint(endpoint), datos, _apiJsonOptions, cts.Token);
 
                 if (!response.IsSuccessStatusCode)
+                {
+                    var mensaje = await LeerMensajeErrorAsync(response, cts.Token);
+                    RegistrarErrorApi(endpoint, response.StatusCode, mensaje);
                     return default;
+                }
 
                 var json = await response.Content.ReadAsStringAsync(cts.Token);
 
@@ -231,37 +438,10 @@ namespace FrontendFacturacion.Services
 
                 return JsonSerializer.Deserialize<TRaw>(json, _apiJsonOptions);
             }
-            catch
+            catch (Exception ex)
             {
+                RegistrarExcepcionApi(endpoint, ex);
                 return default;
-            }
-        }
-
-        private async Task<bool> PutApiAsync<T>(string endpoint, T datos)
-        {
-            try
-            {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
-                var response = await _httpClient.PutAsJsonAsync(Endpoint(endpoint), datos, _apiJsonOptions, cts.Token);
-                return response.IsSuccessStatusCode;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private async Task<bool> DeleteApiAsync(string endpoint)
-        {
-            try
-            {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
-                var response = await _httpClient.DeleteAsync(Endpoint(endpoint), cts.Token);
-                return response.IsSuccessStatusCode;
-            }
-            catch
-            {
-                return false;
             }
         }
 
@@ -273,8 +453,8 @@ namespace FrontendFacturacion.Services
                 {
                     Origen = "MOCK_JSON",
                     NombreApi = "Mocks locales",
-                    Ambiente = "Fallback local",
-                    Mensaje = "Datos obtenidos desde archivos JSON locales",
+                    Ambiente = "Modo de pruebas",
+                    Mensaje = "El frontend está usando archivos JSON locales porque UseMockData está activado.",
                     FechaRespuesta = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
                 };
             }
@@ -285,20 +465,22 @@ namespace FrontendFacturacion.Services
             {
                 return new FuenteDatosDto
                 {
-                    Origen = "API_DUMMY",
-                    NombreApi = "API Cluster / VIP",
-                    Ambiente = "Integración con APIs",
-                    Mensaje = $"La API respondió correctamente desde /api/health. Hostname API: {health.Hostname}",
+                    Origen = "API_REAL",
+                    NombreApi = "API real de facturación",
+                    Ambiente = "Integración real",
+                    Mensaje = $"API real disponible vía /api/health. Nodo API: {health.Hostname}.",
                     FechaRespuesta = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
                 };
             }
 
             return new FuenteDatosDto
             {
-                Origen = "MOCK_JSON",
-                NombreApi = "Mocks locales",
-                Ambiente = "Fallback local",
-                Mensaje = "API no disponible o health check falló.",
+                Origen = "API_CAIDA",
+                NombreApi = "API real no disponible",
+                Ambiente = "Error controlado",
+                Mensaje = string.IsNullOrWhiteSpace(UltimoErrorApi)
+                    ? "La API real no respondió correctamente."
+                    : UltimoErrorApi,
                 FechaRespuesta = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss")
             };
         }
@@ -1461,6 +1643,7 @@ namespace FrontendFacturacion.Services
         public int FacturasPendientes { get; set; }
         public int TotalPagos { get; set; }
         public bool ApiDisponible { get; set; }
+        public FuenteDatosDto FuenteDatos { get; set; } = new();
         public List<FacturaDto> UltimasFacturas { get; set; } = new();
     }
 
