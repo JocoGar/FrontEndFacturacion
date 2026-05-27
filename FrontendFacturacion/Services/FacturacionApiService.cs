@@ -122,17 +122,32 @@ namespace FrontendFacturacion.Services
             );
         }
 
+
+        /// <summary>
+        /// Obtiene de forma asíncrona una lista de elementos TRaw deserializados desde la respuesta JSON de un endpoint
+        /// HTTP.
+        /// </summary>
+        /// <remarks>Si la raíz del documento es un array se deserializa directamente; si se proporciona
+        /// arrayProperty se intenta deserializar esa propiedad cuando existe y es un array. Las excepciones de red
+        /// indicadas se traducen en null; la deserialización que devuelve null se sustituye por una lista
+        /// vacía.</remarks>
+        /// <typeparam name="TRaw">Tipo de los elementos a deserializar desde JSON.</typeparam>
+        /// <param name="endpoint">Ruta relativa del endpoint HTTP a consultar.</param>
+        /// <param name="arrayProperty">Nombre opcional de la propiedad JSON que contiene la matriz a deserializar; si es nulo se espera que la raíz
+        /// del documento sea un array.</param>
+        /// <returns>Lista de TRaw deserializados, lista vacía si la respuesta JSON está vacía o la deserialización devuelve
+        /// null, o null si el estado HTTP no es satisfactorio, la estructura JSON no contiene la colección esperada o
+        /// ocurre una excepción de red (HttpRequestException o TaskCanceledException).</returns>
         private async Task<List<TRaw>?> GetApiListAsync<TRaw>(string endpoint, string? arrayProperty = null)
         {
             try
             {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
-                var response = await _httpClient.GetAsync(Endpoint(endpoint), cts.Token);
+                var response = await _httpClient.GetAsync(Endpoint(endpoint));
 
                 if (!response.IsSuccessStatusCode)
                     return null;
 
-                var json = await response.Content.ReadAsStringAsync(cts.Token);
+                var json = await response.Content.ReadAsStringAsync();
 
                 if (string.IsNullOrWhiteSpace(json))
                     return new List<TRaw>();
@@ -145,7 +160,6 @@ namespace FrontendFacturacion.Services
                 }
 
                 if (!string.IsNullOrWhiteSpace(arrayProperty) &&
-                    doc.RootElement.ValueKind == JsonValueKind.Object &&
                     doc.RootElement.TryGetProperty(arrayProperty, out var arrayElement) &&
                     arrayElement.ValueKind == JsonValueKind.Array)
                 {
@@ -154,7 +168,7 @@ namespace FrontendFacturacion.Services
 
                 return null;
             }
-            catch
+            catch (Exception ex) when (ex is HttpRequestException || ex is TaskCanceledException)
             {
                 return null;
             }
@@ -196,11 +210,10 @@ namespace FrontendFacturacion.Services
         {
             try
             {
-                using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(ObtenerTimeout()));
-                var response = await _httpClient.PostAsJsonAsync(Endpoint(endpoint), datos, _apiJsonOptions, cts.Token);
+                var response = await _httpClient.PostAsJsonAsync(Endpoint(endpoint), datos, _apiJsonOptions);
                 return response.IsSuccessStatusCode;
             }
-            catch
+            catch (Exception ex) when (ex is HttpRequestException || ex is TaskCanceledException)
             {
                 return false;
             }
@@ -871,39 +884,41 @@ namespace FrontendFacturacion.Services
           .ToList();
         }
 
+        /// <summary>
+        /// Obtiene de forma asíncrona el detalle completo de una factura, agregando factura, cliente, usuario, líneas
+        /// de detalle y pagos.
+        /// </summary>
+        /// <remarks>Si está habilitado el uso de mocks devuelve datos simulados. En caso de fallo de la
+        /// API puede aplicarse un fallback a mocks. Recupera y mapea DTOs, completa nombres de producto desde el
+        /// catálogo cuando faltan y obtiene pagos y detalles asociados.</remarks>
+        /// <param name="id">Identificador numérico de la factura a recuperar.</param>
+        /// <returns>Tarea que devuelve un FacturaDetalleViewModel con los datos agregados; puede devolver un modelo vacío o
+        /// datos mock según la configuración y la disponibilidad de la API.</returns>
         public async Task<FacturaDetalleViewModel> ObtenerDetalleFacturaAsync(int id)
         {
+            // Si se usan mocks, siempre se lee el detalle completo desde el archivo correspondiente
             if (UsarMocks())
                 return await LeerDetalleFacturaMockAsync(id);
 
             var rawFactura = await GetApiObjectAsync<RawFacturaDto>($"facturas/{id}", "factura");
 
+            // Si la API no responde o no devuelve datos válidos, se puede optar por usar un fallback a mocks o devolver un modelo vacío
             if (rawFactura == null || rawFactura.IdFactura == 0)
-            {
-                return UsarFallbackSiApiFalla()
-                    ? await LeerDetalleFacturaMockAsync(id)
-                    : new FacturaDetalleViewModel();
-            }
+                return UsarFallbackSiApiFalla() ? await LeerDetalleFacturaMockAsync(id) : new FacturaDetalleViewModel();
 
             var factura = MapFactura(rawFactura);
-            var cliente = rawFactura.Cliente != null
-                ? MapCliente(rawFactura.Cliente)
-                : await ObtenerClientePorIdAsync(factura.IdClienteFactura) ?? new ClienteDto();
+            var cliente = rawFactura.Cliente != null ? MapCliente(rawFactura.Cliente) : await ObtenerClientePorIdAsync(factura.IdClienteFactura) ?? new ClienteDto();
+            var usuario = rawFactura.Usuario != null ? MapUsuario(rawFactura.Usuario) : await ObtenerUsuarioPorDpiAsync(factura.DpiUsuarioFactura) ?? new UsuarioDto();
 
-            var usuario = rawFactura.Usuario != null
-                ? MapUsuario(rawFactura.Usuario)
-                : await ObtenerUsuarioPorDpiAsync(factura.DpiUsuarioFactura) ?? new UsuarioDto();
+            var detalles = rawFactura.Detalles?.Select(MapDetalle).ToList() ?? await ObtenerDetallesPorFacturaAsync(id);
 
-            var detalles = rawFactura.Detalles != null && rawFactura.Detalles.Any()
-                ? rawFactura.Detalles.Select(MapDetalle).ToList()
-                : await ObtenerDetallesPorFacturaAsync(id);
-
-            foreach (var detalle in detalles)
+            if (detalles.Any(d => string.IsNullOrWhiteSpace(d.NombreProducto)))
             {
-                if (string.IsNullOrWhiteSpace(detalle.NombreProducto))
+                var catalogoProductos = await ObtenerProductosAsync();
+
+                foreach (var detalle in detalles.Where(d => string.IsNullOrWhiteSpace(d.NombreProducto)))
                 {
-                    var producto = await ObtenerProductoPorCodigoAsync(detalle.CodigoProductoDetalleFactura);
-                    detalle.NombreProducto = producto?.NombreProducto ?? "";
+                    detalle.NombreProducto = catalogoProductos.FirstOrDefault(p => p.CodigoProducto == detalle.CodigoProductoDetalleFactura)?.NombreProducto ?? "";
                 }
             }
 
