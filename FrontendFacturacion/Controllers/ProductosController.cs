@@ -12,6 +12,16 @@ namespace FrontendFacturacion.Controllers
             _api = api;
         }
 
+        /// <summary>
+        /// Muestra en la vista la lista de productos obtenida desde la API y aplica un filtro opcional por término de
+        /// búsqueda.
+        /// </summary>
+        /// <remarks>Obtiene los productos de forma asíncrona mediante _api.ObtenerProductosAsync(). Si
+        /// 'buscar' tiene contenido, filtra la colección usando Contains sobre los campos relevantes.</remarks>
+        /// <param name="buscar">Término de búsqueda opcional para filtrar productos por Id (comparado como texto), Código, Nombre, Categoría
+        /// o Descripción; las comparaciones de texto son insensibles a mayúsculas.</param>
+        /// <returns>IActionResult que renderiza la vista con la lista de productos; si la obtención falla devuelve la vista con
+        /// una lista vacía y establece ViewBag.Error con un mensaje de conexión.</returns>
         public async Task<IActionResult> Index(string? buscar)
         {
             var productos = await _api.ObtenerProductosAsync();
@@ -51,6 +61,14 @@ namespace FrontendFacturacion.Controllers
             return RedirectToAction("Index");
         }
 
+        /// <summary>
+        /// Muestra la vista de edición del producto especificado.
+        /// </summary>
+        /// <remarks>Obtiene las categorías y el producto desde la API de forma asíncrona y puebla
+        /// ViewBag.Categorias.</remarks>
+        /// <param name="id">Identificador del producto a editar.</param>
+        /// <returns>Resultado asincrónico que renderiza la vista de edición del producto o redirige a la acción Index si no se
+        /// encuentra.</returns>
         public async Task<IActionResult> Edit(int id)
         {
             var categorias = await _api.ObtenerCategoriasAsync();
