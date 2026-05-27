@@ -16,6 +16,12 @@ namespace FrontendFacturacion.Controllers
         {
             var productos = await _api.ObtenerProductosAsync();
 
+            if (productos == null)
+            {
+                ViewBag.Error = "Conexión inestable con el servidor. No se pudieron cargar los productos.";
+                return View(new List<ProductoDto>());
+            }
+
             if (!string.IsNullOrWhiteSpace(buscar))
             {
                 productos = productos
@@ -47,7 +53,8 @@ namespace FrontendFacturacion.Controllers
 
         public async Task<IActionResult> Edit(int id)
         {
-            ViewBag.Categorias = await _api.ObtenerCategoriasAsync();
+            var categorias = await _api.ObtenerCategoriasAsync();
+            ViewBag.Categorias = categorias ?? new List<CategoriaDto>();
 
             var producto = await _api.ObtenerProductoPorIdAsync(id);
 
