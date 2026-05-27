@@ -12,9 +12,26 @@ namespace FrontendFacturacion.Controllers
             _api = api;
         }
 
+
+        /// <summary>
+        /// Obtiene desde la API la lista de clientes y devuelve una vista con los resultados, filtrando por la cadena
+        /// de búsqueda si se proporciona.
+        /// </summary>
+        /// <remarks>Establece ViewBag.Buscar con el término de búsqueda. El filtrado convierte Id a
+        /// cadena y usa StringComparison.OrdinalIgnoreCase para los campos textuales.</remarks>
+        /// <param name="buscar">Cadena opcional para filtrar clientes por Id, DPI, NIT, nombre, apellido, correo o teléfono; las
+        /// comparaciones de texto son insensibles a mayúsculas.</param>
+        /// <returns>Una Task<IActionResult> que renderiza la vista con la colección de ClienteDto; si la API falla se establece
+        /// ViewBag.Error y se devuelve una lista vacía.</returns>
         public async Task<IActionResult> Index(string? buscar)
         {
             var clientes = await _api.ObtenerClientesAsync();
+
+            if (clientes == null)
+            {
+                ViewBag.Error = "No se pudieron obtener los clientes. El servidor está temporalmente inestable.";
+                return View(new List<ClienteDto>());
+            }
 
             if (!string.IsNullOrWhiteSpace(buscar))
             {
@@ -42,7 +59,14 @@ namespace FrontendFacturacion.Controllers
         [HttpPost]
         public async Task<IActionResult> Create(ClienteDto cliente)
         {
-            await _api.CrearClienteAsync(cliente);
+            bool exito = await _api.CrearClienteAsync(cliente);
+
+            if (!exito)
+            {
+                ModelState.AddModelError(string.Empty, "Error al registrar cliente. Verifique la conexión.");
+                return View(cliente);
+            }
+
             return RedirectToAction("Index");
         }
 
